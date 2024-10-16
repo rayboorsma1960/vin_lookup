@@ -1,0 +1,27 @@
+name: vin_information
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.3
+
+dependencies:
+  flutter:
+    sdk: flutter
+  provider: ^6.0.5
+  http: ^1.2.1  # Add this line
+  cupertino_icons: ^1.0.6
+  html: ^0.15.0
+  logging: ^1.0.2
+  image_picker: ^0.8.4+4
+  google_mlkit_text_recognition: ^0.5.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
