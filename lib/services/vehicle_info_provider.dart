@@ -10,10 +10,12 @@ class VehicleInfoProvider with ChangeNotifier {
   final _log = Logger('VehicleInfoProvider');
 
   VehicleInfo? _vehicleInfo;
+  List<Map<String, dynamic>> _vehicleVariants = [];
   bool _isLoading = false;
   String? _error;
 
   VehicleInfo? get vehicleInfo => _vehicleInfo;
+  List<Map<String, dynamic>> get vehicleVariants => _vehicleVariants;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
@@ -31,6 +33,19 @@ class VehicleInfoProvider with ChangeNotifier {
         _log.info('Fetching image for query: $imageQuery');
         final imageUrl = await _imageService.getVehicleImage(imageQuery);
         _vehicleInfo = _vehicleInfo!.copyWith(imageUrl: imageUrl);
+
+        // Fetch vehicle variants
+        _vehicleVariants = await _nhtsaService.getVehicleVariants(
+            _vehicleInfo!.year.toString(),
+            _vehicleInfo!.make,
+            _vehicleInfo!.model
+        );
+
+        // If only one variant, fetch safety ratings directly
+        if (_vehicleVariants.length == 1) {
+          final safetyRatings = await _nhtsaService.getSafetyRatings(_vehicleVariants[0]['VehicleId'].toString());
+          _vehicleInfo = _vehicleInfo!.copyWith(safetyRatings: safetyRatings);
+        }
       } else {
         throw Exception('Vehicle info is null after fetching');
       }
@@ -45,8 +60,25 @@ class VehicleInfoProvider with ChangeNotifier {
     }
   }
 
+  Future<void> selectVariantAndFetchSafetyRatings(String vehicleId) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final safetyRatings = await _nhtsaService.getSafetyRatings(vehicleId);
+      _vehicleInfo = _vehicleInfo!.copyWith(safetyRatings: safetyRatings);
+    } catch (e) {
+      _error = _getErrorMessage(e);
+      _log.severe('Error fetching safety ratings: $_error');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   void clearVehicleInfo() {
     _vehicleInfo = null;
+    _vehicleVariants = [];
     _error = null;
     notifyListeners();
   }

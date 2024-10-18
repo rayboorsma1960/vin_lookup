@@ -25,28 +25,43 @@ class _VinInputScreenState extends State<VinInputScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Enter VIN')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              TextFormField(
-                controller: _vinController,
-                decoration: const InputDecoration(labelText: 'VIN'),
-                validator: _validateVin,
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _submitVin,
-                child: const Text('Submit'),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _scanVin,
-                child: const Text('Scan VIN with Camera'),
-              ),
-            ],
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        TextFormField(
+                          controller: _vinController,
+                          decoration: const InputDecoration(
+                            labelText: 'VIN',
+                            border: OutlineInputBorder(),
+                          ),
+                          validator: _validateVin,
+                        ),
+                        const SizedBox(height: 20),
+                        ElevatedButton(
+                          onPressed: _submitVin,
+                          child: const Text('Submit'),
+                        ),
+                        const SizedBox(height: 20),
+                        ElevatedButton(
+                          onPressed: _scanVin,
+                          child: const Text('Scan VIN with Camera'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

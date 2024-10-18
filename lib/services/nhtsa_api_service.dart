@@ -8,20 +8,12 @@ class NHTSAApiService {
   final String baseUrl = 'https://vpic.nhtsa.dot.gov/api/vehicles/';
   final String recallsUrl = 'https://api.nhtsa.gov/recalls/recallsByVehicle';
   final String safetyRatingsUrl = 'https://api.nhtsa.gov/SafetyRatings';
-  final String complaintsUrl = 'https://api.nhtsa.gov/complaints/complaintsByVehicle';
 
   Future<VehicleInfo> getVehicleInfo(String vin) async {
     try {
       final basicInfo = await _getExtendedInfo(vin);
-      final recalls = await _getRecalls(vin);
-      final safetyRatings = await _getSafetyRatings(basicInfo.year.toString(), basicInfo.make, basicInfo.model);
-      final complaints = await _getComplaints(basicInfo.year.toString(), basicInfo.make, basicInfo.model);
-
-      return basicInfo.copyWith(
-        recalls: recalls,
-        safetyRatings: safetyRatings,
-        complaints: complaints,
-      );
+      final recalls = await getRecalls(basicInfo.make, basicInfo.model, basicInfo.year.toString());
+      return basicInfo.copyWith(recalls: recalls);
     } catch (e) {
       _log.severe('Error in getVehicleInfo: $e');
       rethrow;
@@ -51,7 +43,6 @@ class NHTSAApiService {
           recalls: [],
           safetyRatings: {},
           complaints: [],
-          // Add more fields as needed from the extended info
           manufacturerName: results['Manufacturer'] ?? 'N/A',
           plantCity: results['PlantCity'] ?? 'N/A',
           plantState: results['PlantState'] ?? 'N/A',
@@ -71,66 +62,89 @@ class NHTSAApiService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> _getRecalls(String vin) async {
+  Future<List<Map<String, dynamic>>> getRecalls(String make, String model, String year) async {
     try {
-      final response = await http.get(Uri.parse('$recallsUrl?vin=$vin'));
+      final encodedMake = Uri.encodeComponent(make);
+      final encodedModel = Uri.encodeComponent(model);
+      final url = '$recallsUrl?make=$encodedMake&model=$encodedModel&modelYear=$year';
+
+      _log.info('Fetching recalls from URL: $url');
+
+      final response = await http.get(Uri.parse(url));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        if (data['Count'] == 0) {
-          _log.info('No recalls found for VIN: $vin');
+        _log.info('Recalls API response: $data');
+
+        if (data['Count'] > 0 && data['results'] is List) {
+          final recalls = (data['results'] as List).cast<Map<String, dynamic>>();
+          _log.info('Found ${recalls.length} recalls for $year $make $model');
+          return recalls;
+        } else {
+          _log.info('No recalls found for $year $make $model');
           return [];
         }
-        return (data['results'] as List).cast<Map<String, dynamic>>();
       } else {
         _log.warning('Failed to fetch recalls. Status code: ${response.statusCode}');
         return [];
       }
     } catch (e) {
-      _log.warning('Error fetching recalls: $e');
+      _log.severe('Error fetching recalls: $e');
       return [];
     }
   }
 
-  Future<Map<String, dynamic>> _getSafetyRatings(String year, String make, String model) async {
+  Future<List<Map<String, dynamic>>> getVehicleVariants(String year, String make, String model) async {
     try {
-      final response = await http.get(Uri.parse('$safetyRatingsUrl/modelyear/$year/make/$make/model/$model'));
+      final encodedYear = Uri.encodeComponent(year);
+      final encodedMake = Uri.encodeComponent(make);
+      final encodedModel = Uri.encodeComponent(model);
+      final url = '$safetyRatingsUrl/modelyear/$encodedYear/make/$encodedMake/model/$encodedModel?format=json';
+
+      _log.info('Fetching vehicle variants from URL: $url');
+
+      final response = await http.get(Uri.parse(url));
+      _log.info('Vehicle variants API response status code: ${response.statusCode}');
+      _log.info('Vehicle variants API response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        if (data['Count'] == 0) {
-          _log.info('No safety ratings found for $year $make $model');
-          return {};
+        if (data['Count'] > 0 && data['Results'] is List) {
+          _log.info('Found ${data['Count']} vehicle variants');
+          return List<Map<String, dynamic>>.from(data['Results']);
         }
-        return data['Results']?[0] ?? {};
-      } else {
-        _log.warning('Failed to fetch safety ratings. Status code: ${response.statusCode}');
-        return {};
       }
+
+      _log.warning('No vehicle variants found for $year $make $model');
+      return [];
     } catch (e) {
-      _log.warning('Error fetching safety ratings: $e');
+      _log.severe('Error fetching vehicle variants: $e');
+      return [];
+    }
+  }
+
+  Future<Map<String, dynamic>> getSafetyRatings(String vehicleId) async {
+    try {
+      final url = '$safetyRatingsUrl/VehicleId/$vehicleId?format=json';
+      _log.info('Fetching safety ratings from URL: $url');
+
+      final response = await http.get(Uri.parse(url));
+      _log.info('Safety Ratings API response status code: ${response.statusCode}');
+      _log.info('Safety Ratings API response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['Count'] > 0 && data['Results'] is List && data['Results'].isNotEmpty) {
+          _log.info('Found safety ratings for vehicle ID: $vehicleId');
+          return data['Results'][0];  // Return the entire Results object
+        }
+      }
+
+      _log.warning('No safety ratings found for vehicle ID: $vehicleId');
       return {};
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> _getComplaints(String year, String make, String model) async {
-    try {
-      final response = await http.get(Uri.parse('$complaintsUrl?year=$year&make=$make&model=$model'));
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['Count'] == 0) {
-          _log.info('No complaints found for $year $make $model');
-          return [];
-        }
-        return (data['results'] as List).cast<Map<String, dynamic>>();
-      } else {
-        _log.warning('Failed to fetch complaints. Status code: ${response.statusCode}');
-        return [];
-      }
     } catch (e) {
-      _log.warning('Error fetching complaints: $e');
-      return [];
+      _log.severe('Error fetching safety ratings: $e');
+      return {};
     }
   }
 }
