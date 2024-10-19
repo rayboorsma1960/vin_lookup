@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import '../../services/vehicle_info_provider.dart';
+import '../../services/vin_validator.dart';
 import '../vehicle_details/vehicle_details_screen.dart';
 import 'package:logging/logging.dart';
 
@@ -33,32 +33,23 @@ class _VinInputScreenState extends State<VinInputScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        TextFormField(
-                          controller: _vinController,
-                          decoration: const InputDecoration(
-                            labelText: 'VIN',
-                            border: OutlineInputBorder(),
-                          ),
-                          validator: _validateVin,
-                        ),
-                        const SizedBox(height: 20),
-                        ElevatedButton(
-                          onPressed: _submitVin,
-                          child: const Text('Submit'),
-                        ),
-                        const SizedBox(height: 20),
-                        ElevatedButton(
-                          onPressed: _scanVin,
-                          child: const Text('Scan VIN with Camera'),
-                        ),
-                      ],
-                    ),
+                TextFormField(
+                  controller: _vinController,
+                  decoration: const InputDecoration(
+                    labelText: 'VIN',
+                    border: OutlineInputBorder(),
                   ),
+                  validator: _validateVin,
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: _submitVin,
+                  child: const Text('Submit'),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: _scanVin,
+                  child: const Text('Scan VIN with Camera'),
                 ),
               ],
             ),
@@ -72,11 +63,8 @@ class _VinInputScreenState extends State<VinInputScreen> {
     if (value == null || value.isEmpty) {
       return 'Please enter a VIN';
     }
-    if (value.length != 17) {
-      return 'VIN must be 17 characters long';
-    }
-    if (value.contains('I') || value.contains('O') || value.contains('Q')) {
-      return 'VIN cannot contain I, O, or Q';
+    if (!VinValidator.isValid(value)) {
+      return 'Please enter a valid 17-character VIN';
     }
     return null;
   }
@@ -104,7 +92,24 @@ class _VinInputScreenState extends State<VinInputScreen> {
         final RecognizedText recognizedText = await _textRecognizer.processImage(inputImage);
 
         String text = recognizedText.text;
-        _extractVin(text);
+        String? vin = _extractVin(text);
+
+        if (vin != null) {
+          if (VinValidator.isValid(vin)) {
+            setState(() {
+              _vinController.text = vin;
+            });
+          } else {
+            String? suggestion = VinValidator.suggestCorrection(vin);
+            if (suggestion != null) {
+              _showCorrectionDialog(vin, suggestion);
+            } else {
+              _showErrorDialog('Invalid VIN detected: $vin');
+            }
+          }
+        } else {
+          _showErrorDialog('No valid VIN found in the image');
+        }
       } else {
         _showErrorDialog('No image selected');
       }
@@ -113,21 +118,61 @@ class _VinInputScreenState extends State<VinInputScreen> {
     }
   }
 
-  void _extractVin(String text) {
-    RegExp vinPattern = RegExp(r'\b[A-HJ-NPR-Z0-9]{17}\b');
-    Iterable<Match> matches = vinPattern.allMatches(text);
+  String? _extractVin(String text) {
+    _log.info('Extracting VIN from text: $text');
+    RegExp wmiPattern = RegExp(r'\b[A-HJ-NPR-Z0-9]{4}');
+    Iterable<Match> wmiMatches = wmiPattern.allMatches(text);
 
-    for (Match match in matches) {
-      String potentialVin = match.group(0)!;
-      if (_validateVin(potentialVin) == null) {
-        setState(() {
-          _vinController.text = potentialVin;
-        });
-        return;
+    for (Match match in wmiMatches) {
+      int startIndex = match.start;
+      if (startIndex + 17 <= text.length) {
+        String potentialVin = text.substring(startIndex, startIndex + 17);
+        _log.info('Potential VIN found: $potentialVin');
+        if (VinValidator.isValid(potentialVin)) {
+          _log.info('Valid VIN extracted: $potentialVin');
+          return potentialVin;
+        } else {
+          String? suggestion = VinValidator.suggestCorrection(potentialVin);
+          if (suggestion != null) {
+            _log.info('Suggested correction for VIN: $suggestion');
+            return suggestion;
+          }
+        }
       }
     }
 
-    _showErrorDialog('No valid VIN found in the image');
+    _log.warning('No valid VIN found in the text');
+    return null;
+  }
+
+  void _showCorrectionDialog(String original, String suggestion) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('VIN Correction'),
+        content: Text('The scanned VIN might be incorrect. Did you mean: $suggestion?'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              setState(() {
+                _vinController.text = original;
+              });
+            },
+            child: Text('Use Original'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              setState(() {
+                _vinController.text = suggestion;
+              });
+            },
+            child: Text('Use Suggestion'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showErrorDialog(String message) {
