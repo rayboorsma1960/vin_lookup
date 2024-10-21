@@ -20,38 +20,171 @@ class _VinInputScreenState extends State<VinInputScreen> {
   final _log = Logger('VinInputScreen');
   final TextRecognizer _textRecognizer = TextRecognizer();
   final ImagePicker _picker = ImagePicker();
+  bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Enter VIN')),
+      appBar: AppBar(
+        title: const Text('Vehicle Lookup'),
+        elevation: 0,
+      ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                TextFormField(
-                  controller: _vinController,
-                  decoration: const InputDecoration(
-                    labelText: 'VIN',
-                    border: OutlineInputBorder(),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Header Section
+                  const Icon(
+                    Icons.directions_car,
+                    size: 64,
+                    color: Colors.blue,
                   ),
-                  validator: _validateVin,
-                ),
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: _submitVin,
-                  child: const Text('Submit'),
-                ),
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: _scanVin,
-                  child: const Text('Scan VIN with Camera'),
-                ),
-              ],
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Enter Vehicle Information',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Please enter your Vehicle Identification Number (VIN) or scan it using your camera',
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: 16,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 32),
+
+                  // VIN Input Field
+                  TextFormField(
+                    controller: _vinController,
+                    decoration: InputDecoration(
+                      labelText: 'Vehicle Identification Number (VIN)',
+                      hintText: 'Enter 17-character VIN',
+                      prefixIcon: const Icon(Icons.credit_card),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey[50],
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
+                      isDense: true,
+                      prefixIconConstraints: const BoxConstraints(
+                        minWidth: 40,
+                        minHeight: 40,
+                      ),
+                    ),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      letterSpacing: 0.8,
+                      fontFeatures: [
+                        FontFeature.tabularFigures(),
+                      ],
+                    ),
+                    maxLength: 17,
+                    buildCounter: (
+                        BuildContext context, {
+                          required int currentLength,
+                          required bool isFocused,
+                          required int? maxLength,
+                        }) {
+                      return Container(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(
+                          '$currentLength/$maxLength',
+                          style: TextStyle(
+                            color: currentLength == maxLength ? Colors.green : Colors.grey,
+                            fontSize: 12,
+                          ),
+                        ),
+                      );
+                    },
+                    textCapitalization: TextCapitalization.characters,
+                    validator: _validateVin,
+                    onChanged: (value) {
+                      if (value != value.toUpperCase()) {
+                        _vinController.value = TextEditingValue(
+                          text: value.toUpperCase(),
+                          selection: _vinController.selection,
+                        );
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Scan Button
+                  OutlinedButton.icon(
+                    onPressed: _isLoading ? null : _scanVin,
+                    icon: const Icon(Icons.camera_alt),
+                    label: const Text('Scan VIN with Camera'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Submit Button
+                  ElevatedButton(
+                    onPressed: _isLoading ? null : _submitVin,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                        : const Text(
+                      'Look Up Vehicle',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  ),
+
+                  // Help Text
+                  if (!_isLoading) ...[
+                    const SizedBox(height: 24),
+                    const Text(
+                      'Where to find your VIN?',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'The VIN can be found on your vehicle registration, insurance card, or on the driver\'s side dashboard near the windshield.',
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontSize: 14,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
         ),
@@ -69,22 +202,33 @@ class _VinInputScreenState extends State<VinInputScreen> {
     return null;
   }
 
-  void _submitVin() {
+  Future<void> _submitVin() async {
     if (_formKey.currentState!.validate()) {
-      _log.info('Submitting VIN: ${_vinController.text}');
-      final provider = Provider.of<VehicleInfoProvider>(context, listen: false);
-      provider.fetchVehicleInfo(_vinController.text).then((_) {
+      setState(() => _isLoading = true);
+      try {
+        _log.info('Submitting VIN: ${_vinController.text}');
+        final provider = Provider.of<VehicleInfoProvider>(context, listen: false);
+        await provider.fetchVehicleInfo(_vinController.text);
         _log.info('Navigation to VehicleDetailsScreen');
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => VehicleDetailsScreen()),
-        );
-      });
+        if (mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const VehicleDetailsScreen()),
+          );
+        }
+      } catch (e) {
+        _showErrorDialog('Failed to fetch vehicle information. Please try again.');
+      } finally {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
+      }
     }
   }
 
   Future<void> _scanVin() async {
     try {
+      setState(() => _isLoading = true);
       final XFile? image = await _picker.pickImage(source: ImageSource.camera);
 
       if (image != null) {
@@ -108,13 +252,15 @@ class _VinInputScreenState extends State<VinInputScreen> {
             }
           }
         } else {
-          _showErrorDialog('No valid VIN found in the image');
+          _showErrorDialog(
+            'No valid VIN found in the image. Please ensure the VIN is clearly visible and try again.',
+          );
         }
-      } else {
-        _showErrorDialog('No image selected');
       }
     } catch (e) {
-      _showErrorDialog('Error processing image: $e');
+      _showErrorDialog('Error scanning VIN: ${e.toString()}');
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
@@ -148,9 +294,21 @@ class _VinInputScreenState extends State<VinInputScreen> {
   void _showCorrectionDialog(String original, String suggestion) {
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: Text('VIN Correction'),
-        content: Text('The scanned VIN might be incorrect. Did you mean: $suggestion?'),
+        title: const Text('VIN Correction'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('The scanned VIN might be incorrect.'),
+            const SizedBox(height: 8),
+            Text('Original: $original', style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text('Suggested: $suggestion', style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            const Text('Which would you like to use?'),
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () {
@@ -159,16 +317,16 @@ class _VinInputScreenState extends State<VinInputScreen> {
                 _vinController.text = original;
               });
             },
-            child: Text('Use Original'),
+            child: const Text('Use Original'),
           ),
-          TextButton(
+          FilledButton(
             onPressed: () {
               Navigator.pop(context);
               setState(() {
                 _vinController.text = suggestion;
               });
             },
-            child: Text('Use Suggestion'),
+            child: const Text('Use Suggestion'),
           ),
         ],
       ),
@@ -179,12 +337,12 @@ class _VinInputScreenState extends State<VinInputScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Error'),
+        title: const Text('Error'),
         content: Text(message),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('OK'),
+            child: const Text('OK'),
           ),
         ],
       ),
