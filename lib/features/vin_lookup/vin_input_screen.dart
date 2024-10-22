@@ -6,6 +6,7 @@ import '../../services/vehicle_info_provider.dart';
 import '../../services/vin_validator.dart';
 import 'vehicle_variant_selection_screen.dart';
 import 'package:logging/logging.dart';
+import '../vehicle_details/vehicle_details_screen.dart';  // Add this import
 
 class VinInputScreen extends StatefulWidget {
   const VinInputScreen({super.key});
@@ -210,15 +211,39 @@ class _VinInputScreenState extends State<VinInputScreen> {
         if (mounted) {
           if (provider.error != null) {
             _showErrorDialog(provider.error!);
-          } else if (provider.vehicleVariants.isEmpty) {
-            _showErrorDialog('No vehicle variants found for this VIN.');
           } else {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const VehicleVariantSelectionScreen(),
-              ),
-            );
+            // Check if we have basic vehicle info, regardless of variants
+            if (provider.vehicleInfo != null) {
+              if (provider.vehicleVariants.isNotEmpty) {
+                // If we have variants, go to variant selection
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const VehicleVariantSelectionScreen(),
+                  ),
+                );
+              } else {
+                // If no variants but we have vehicle info, go directly to details
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const VehicleDetailsScreen(),
+                  ),
+                );
+
+                // Optionally show an informative snackbar about safety ratings
+                if (provider.vehicleInfo!.year >= 1990) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Safety ratings are not available for this vehicle'),
+                      duration: Duration(seconds: 3),
+                    ),
+                  );
+                }
+              }
+            } else {
+              _showErrorDialog('Unable to retrieve vehicle information. Please try again.');
+            }
           }
         }
       } catch (e) {
