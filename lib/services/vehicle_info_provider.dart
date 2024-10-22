@@ -26,9 +26,13 @@ class VehicleInfoProvider with ChangeNotifier {
     notifyListeners();
 
     try {
+      // Fetch basic vehicle info
       _vehicleInfo = await _nhtsaService.getVehicleInfo(vin);
+
       if (_vehicleInfo != null) {
         _log.info('Vehicle info fetched successfully');
+
+        // Fetch image
         final imageQuery = '${_vehicleInfo!.year} ${_vehicleInfo!.make} ${_vehicleInfo!.model}';
         _log.info('Fetching image for query: $imageQuery');
         final imageUrl = await _imageService.getVehicleImage(imageQuery);
@@ -41,11 +45,7 @@ class VehicleInfoProvider with ChangeNotifier {
             _vehicleInfo!.model
         );
 
-        // If only one variant, fetch safety ratings directly
-        if (_vehicleVariants.length == 1) {
-          final safetyRatings = await _nhtsaService.getSafetyRatings(_vehicleVariants[0]['VehicleId'].toString());
-          _vehicleInfo = _vehicleInfo!.copyWith(safetyRatings: safetyRatings);
-        }
+        _log.info('Found ${_vehicleVariants.length} variants');
       } else {
         throw Exception('Vehicle info is null after fetching');
       }
@@ -55,21 +55,37 @@ class VehicleInfoProvider with ChangeNotifier {
       _log.severe('Error in fetchVehicleInfo: $_error');
     } finally {
       _isLoading = false;
-      _log.info('fetchVehicleInfo completed. Has vehicle info: ${_vehicleInfo != null}');
       notifyListeners();
     }
   }
 
   Future<void> selectVariantAndFetchSafetyRatings(String vehicleId) async {
+    _log.info('Selecting variant and fetching safety ratings for vehicle ID: $vehicleId');
     _isLoading = true;
+    _error = null;
     notifyListeners();
 
     try {
+      // Find the selected variant
+      final selectedVariant = _vehicleVariants.firstWhere(
+            (variant) => variant['VehicleId'].toString() == vehicleId,
+        orElse: () => throw Exception('Variant not found'),
+      );
+
+      // Fetch safety ratings
       final safetyRatings = await _nhtsaService.getSafetyRatings(vehicleId);
-      _vehicleInfo = _vehicleInfo!.copyWith(safetyRatings: safetyRatings);
+
+      // Update vehicle info with variant-specific details and safety ratings
+      _vehicleInfo = _vehicleInfo?.copyWith(
+        trim: selectedVariant['Trim'] ?? _vehicleInfo?.trim ?? 'N/A',
+        bodyClass: selectedVariant['BodyStyle'] ?? _vehicleInfo?.bodyClass ?? 'N/A',
+        safetyRatings: safetyRatings,
+      );
+
+      _log.info('Vehicle variant details updated successfully');
     } catch (e) {
       _error = _getErrorMessage(e);
-      _log.severe('Error fetching safety ratings: $_error');
+      _log.severe('Error selecting variant: $_error');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -80,12 +96,13 @@ class VehicleInfoProvider with ChangeNotifier {
     _vehicleInfo = null;
     _vehicleVariants = [];
     _error = null;
+    _isLoading = false;
     notifyListeners();
   }
 
   String _getErrorMessage(dynamic error) {
     if (error is Exception) {
-      return 'An error occurred: ${error.toString()}';
+      return error.toString().replaceAll('Exception: ', '');
     } else if (error is String) {
       return error;
     } else {

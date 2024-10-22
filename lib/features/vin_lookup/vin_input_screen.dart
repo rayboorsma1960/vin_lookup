@@ -4,11 +4,11 @@ import 'package:image_picker/image_picker.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import '../../services/vehicle_info_provider.dart';
 import '../../services/vin_validator.dart';
-import '../vehicle_details/vehicle_details_screen.dart';
+import 'vehicle_variant_selection_screen.dart';
 import 'package:logging/logging.dart';
 
 class VinInputScreen extends StatefulWidget {
-  const VinInputScreen({Key? key}) : super(key: key);
+  const VinInputScreen({super.key});
 
   @override
   State<VinInputScreen> createState() => _VinInputScreenState();
@@ -17,7 +17,7 @@ class VinInputScreen extends StatefulWidget {
 class _VinInputScreenState extends State<VinInputScreen> {
   final _formKey = GlobalKey<FormState>();
   final _vinController = TextEditingController();
-  final _log = Logger('VinInputScreen');
+  static final _log = Logger('VinInputScreen');
   final TextRecognizer _textRecognizer = TextRecognizer();
   final ImagePicker _picker = ImagePicker();
   bool _isLoading = false;
@@ -89,9 +89,6 @@ class _VinInputScreenState extends State<VinInputScreen> {
                     style: const TextStyle(
                       fontSize: 14,
                       letterSpacing: 0.8,
-                      fontFeatures: [
-                        FontFeature.tabularFigures(),
-                      ],
                     ),
                     maxLength: 17,
                     buildCounter: (
@@ -209,12 +206,20 @@ class _VinInputScreenState extends State<VinInputScreen> {
         _log.info('Submitting VIN: ${_vinController.text}');
         final provider = Provider.of<VehicleInfoProvider>(context, listen: false);
         await provider.fetchVehicleInfo(_vinController.text);
-        _log.info('Navigation to VehicleDetailsScreen');
+
         if (mounted) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const VehicleDetailsScreen()),
-          );
+          if (provider.error != null) {
+            _showErrorDialog(provider.error!);
+          } else if (provider.vehicleVariants.isEmpty) {
+            _showErrorDialog('No vehicle variants found for this VIN.');
+          } else {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const VehicleVariantSelectionScreen(),
+              ),
+            );
+          }
         }
       } catch (e) {
         _showErrorDialog('Failed to fetch vehicle information. Please try again.');

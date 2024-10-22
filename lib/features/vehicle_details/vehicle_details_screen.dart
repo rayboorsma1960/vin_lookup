@@ -5,14 +5,14 @@ import '../../models/vehicle_info.dart';
 import 'package:logging/logging.dart';
 
 class VehicleDetailsScreen extends StatefulWidget {
-  const VehicleDetailsScreen({Key? key}) : super(key: key);
+  const VehicleDetailsScreen({super.key});
 
   @override
-  _VehicleDetailsScreenState createState() => _VehicleDetailsScreenState();
+  State<VehicleDetailsScreen> createState() => _VehicleDetailsScreenState();
 }
 
 class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
-  final _log = Logger('VehicleDetailsScreen');
+  static final _log = Logger('VehicleDetailsScreen');
   String? selectedRecallId;
 
   @override
@@ -42,49 +42,49 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
             );
           } else if (provider.vehicleInfo == null) {
             return const Center(child: Text('No vehicle information available'));
-          } else {
-            final vehicleInfo = provider.vehicleInfo!;
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildVehicleImage(vehicleInfo),
-                  const SizedBox(height: 20),
-                  _buildInfoSection('Basic Information', [
-                    _buildInfoTile('VIN', vehicleInfo.vin),
-                    _buildInfoTile('Make', vehicleInfo.make),
-                    _buildInfoTile('Model', vehicleInfo.model),
-                    _buildInfoTile('Year', vehicleInfo.year.toString()),
-                    _buildInfoTile('Vehicle Type', vehicleInfo.vehicleType),
-                    _buildInfoTile('Engine Size', vehicleInfo.engineSize),
-                    _buildInfoTile('Fuel Type', vehicleInfo.fuelType),
-                    _buildInfoTile('Transmission', vehicleInfo.transmission),
-                    _buildInfoTile('Drive Type', vehicleInfo.driveType),
-                    _buildInfoTile('Doors', vehicleInfo.doors.toString()),
-                  ]),
-                  const SizedBox(height: 20),
-                  _buildInfoSection('Extended Information', [
-                    _buildInfoTile('Manufacturer', vehicleInfo.manufacturerName),
-                    _buildInfoTile('Plant City', vehicleInfo.plantCity),
-                    _buildInfoTile('Plant State', vehicleInfo.plantState),
-                    _buildInfoTile('Plant Country', vehicleInfo.plantCountry),
-                    _buildInfoTile('Vehicle Descriptor', vehicleInfo.vehicleDescriptor),
-                    _buildInfoTile('Body Class', vehicleInfo.bodyClass),
-                    _buildInfoTile('Steering Location', vehicleInfo.steeringLocation),
-                    _buildInfoTile('Series', vehicleInfo.series),
-                    _buildInfoTile('Trim', vehicleInfo.trim),
-                  ]),
-                  const SizedBox(height: 20),
-                  _buildVehicleVariantsSection(provider),
-                  const SizedBox(height: 20),
-                  _buildSafetyRatingsSection(vehicleInfo.safetyRatings),
-                  const SizedBox(height: 20),
-                  _buildRecallsSection(vehicleInfo.recalls),
-                ],
-              ),
-            );
           }
+
+          final vehicleInfo = provider.vehicleInfo!;
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildVehicleImage(vehicleInfo),
+                const SizedBox(height: 20),
+                _buildInfoSection('Basic Information', [
+                  _buildInfoTile('VIN', vehicleInfo.vin),
+                  _buildInfoTile('Make', vehicleInfo.make),
+                  _buildInfoTile('Model', vehicleInfo.model),
+                  _buildInfoTile('Year', vehicleInfo.year.toString()),
+                  _buildInfoTile('Vehicle Type', vehicleInfo.vehicleType),
+                  _buildInfoTile('Engine Size', vehicleInfo.engineSize),
+                  _buildInfoTile('Fuel Type', vehicleInfo.fuelType),
+                  _buildInfoTile('Transmission', vehicleInfo.transmission),
+                  _buildInfoTile('Drive Type', vehicleInfo.driveType),
+                  _buildInfoTile('Doors', vehicleInfo.doors.toString()),
+                ]),
+                const SizedBox(height: 20),
+                _buildInfoSection('Extended Information', [
+                  _buildInfoTile('Manufacturer', vehicleInfo.manufacturerName),
+                  _buildInfoTile('Plant City', vehicleInfo.plantCity),
+                  _buildInfoTile('Plant State', vehicleInfo.plantState),
+                  _buildInfoTile('Plant Country', vehicleInfo.plantCountry),
+                  _buildInfoTile('Vehicle Descriptor', vehicleInfo.vehicleDescriptor),
+                  _buildInfoTile('Body Class', vehicleInfo.bodyClass),
+                  _buildInfoTile('Steering Location', vehicleInfo.steeringLocation),
+                  _buildInfoTile('Series', vehicleInfo.series),
+                  _buildInfoTile('Trim', vehicleInfo.trim),
+                ]),
+                const SizedBox(height: 20),
+                _buildVehicleVariantsSection(provider),
+                const SizedBox(height: 20),
+                _buildSafetyRatingsSection(vehicleInfo.safetyRatings),
+                const SizedBox(height: 20),
+                _buildRecallsSection(vehicleInfo.recalls),
+              ],
+            ),
+          );
         },
       ),
     );
@@ -95,7 +95,7 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
     String? googleImageUrl = vehicleInfo.imageUrl;
 
     if (nhtsaImageUrl == null && googleImageUrl.isEmpty) {
-      return const SizedBox.shrink(); // No image available
+      return const SizedBox.shrink();
     }
 
     return Center(
@@ -106,7 +106,6 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
         errorBuilder: (context, error, stackTrace) {
           _log.warning('Failed to load NHTSA image: $error');
           if (nhtsaImageUrl != null && googleImageUrl.isNotEmpty) {
-            // If NHTSA image fails, try Google image
             return Image.network(
               googleImageUrl,
               height: 200,
@@ -159,13 +158,21 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
   }
 
   Widget _buildVehicleVariantsSection(VehicleInfoProvider provider) {
+    // Only show if there are multiple variants and no selection yet
+    if (provider.vehicleVariants.isEmpty ||
+        (provider.vehicleVariants.length == 1 && provider.vehicleInfo?.safetyRatings.isNotEmpty == true)) {
+      return const SizedBox.shrink();
+    }
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Vehicle Variants', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text('Vehicle Variants',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)
+            ),
             const SizedBox(height: 8),
             _buildVehicleVariants(provider),
           ],
@@ -175,33 +182,37 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
   }
 
   Widget _buildVehicleVariants(VehicleInfoProvider provider) {
-    if (provider.vehicleVariants.isEmpty) {
-      return const Text('No variants available');
-    } else if (provider.vehicleVariants.length == 1) {
-      return Text('Selected Variant: ${provider.vehicleVariants[0]['VehicleDescription']}');
-    } else {
-      return DropdownButton<String>(
-        isExpanded: true,
-        hint: const Text('Select Vehicle Variant'),
-        value: provider.vehicleInfo?.safetyRatings.isNotEmpty == true
-            ? provider.vehicleInfo!.safetyRatings['VehicleId'].toString()
-            : null,
-        items: provider.vehicleVariants.map((variant) {
-          return DropdownMenuItem<String>(
-            value: variant['VehicleId'].toString(),
-            child: Text(
-              variant['VehicleDescription'],
-              overflow: TextOverflow.ellipsis,
-            ),
-          );
-        }).toList(),
-        onChanged: (String? vehicleId) {
-          if (vehicleId != null) {
-            provider.selectVariantAndFetchSafetyRatings(vehicleId);
-          }
-        },
+    // Show current selection if we have safety ratings
+    if (provider.vehicleInfo?.safetyRatings.isNotEmpty == true) {
+      final currentVariant = provider.vehicleVariants.firstWhere(
+            (v) => v['VehicleId'].toString() ==
+            provider.vehicleInfo!.safetyRatings['VehicleId'].toString(),
+        orElse: () => {'VehicleDescription': 'Unknown Variant'},
       );
+      return Text('Current Variant: ${currentVariant['VehicleDescription']}');
     }
+
+    // Otherwise show dropdown for selection
+    return DropdownButton<String>(
+      isExpanded: true,
+      hint: const Text('Select Vehicle Variant'),
+      value: null,
+      items: provider.vehicleVariants.map((variant) {
+        return DropdownMenuItem<String>(
+          value: variant['VehicleId'].toString(),
+          child: Text(
+            variant['VehicleDescription'] ?? 'Unknown Variant',
+            overflow: TextOverflow.ellipsis,
+          ),
+        );
+      }).toList(),
+      onChanged: (String? vehicleId) async {
+        if (vehicleId != null) {
+          await provider.selectVariantAndFetchSafetyRatings(vehicleId);
+          setState(() {}); // Refresh the UI after selection
+        }
+      },
+    );
   }
 
   Widget _buildSafetyRatingsSection(Map<String, dynamic> ratings) {
@@ -211,7 +222,9 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Safety Ratings', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text('Safety Ratings',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)
+            ),
             const SizedBox(height: 8),
             _buildSafetyRatings(ratings),
           ],
@@ -224,20 +237,30 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
     if (ratings.isEmpty) {
       return const Text('No safety ratings available for this vehicle.');
     }
+
+    // Safely get rating value with null check
+    String? getRating(String key) {
+      final value = ratings[key];
+      if (value == null || value.toString().trim().isEmpty) {
+        return null;
+      }
+      return value.toString();
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildRatingTile('Overall Rating', ratings['OverallRating']),
-        _buildRatingTile('Frontal Crash', ratings['OverallFrontCrashRating']),
-        _buildRatingTile('Side Crash', ratings['OverallSideCrashRating']),
-        _buildRatingTile('Rollover', ratings['RolloverRating']),
-        _buildRatingTile('Front Crash Driver Side', ratings['FrontCrashDriversideRating']),
-        _buildRatingTile('Front Crash Passenger Side', ratings['FrontCrashPassengersideRating']),
-        _buildRatingTile('Side Crash Driver Side', ratings['SideCrashDriversideRating']),
-        _buildRatingTile('Side Crash Passenger Side', ratings['SideCrashPassengersideRating']),
+        _buildRatingTile('Overall Rating', getRating('OverallRating')),
+        _buildRatingTile('Frontal Crash', getRating('OverallFrontCrashRating')),
+        _buildRatingTile('Side Crash', getRating('OverallSideCrashRating')),
+        _buildRatingTile('Rollover', getRating('RolloverRating')),
+        _buildRatingTile('Front Crash Driver Side', getRating('FrontCrashDriversideRating')),
+        _buildRatingTile('Front Crash Passenger Side', getRating('FrontCrashPassengersideRating')),
+        _buildRatingTile('Side Crash Driver Side', getRating('SideCrashDriversideRating')),
+        _buildRatingTile('Side Crash Passenger Side', getRating('SideCrashPassengersideRating')),
         const SizedBox(height: 16),
-        _buildCrashTestImage('Front Crash Test', ratings['FrontCrashPicture']),
-        _buildCrashTestImage('Side Crash Test', ratings['SideCrashPicture']),
+        _buildCrashTestImage('Front Crash Test', getRating('FrontCrashPicture')),
+        _buildCrashTestImage('Side Crash Test', getRating('SideCrashPicture')),
       ],
     );
   }
@@ -259,7 +282,9 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
               children: List.generate(
                 5,
                     (index) => Icon(
-                  index < int.parse(rating) ? Icons.star : Icons.star_border,
+                  index < (int.tryParse(rating) ?? 0)
+                      ? Icons.star
+                      : Icons.star_border,
                   color: Colors.amber,
                   size: 24,
                 ),
