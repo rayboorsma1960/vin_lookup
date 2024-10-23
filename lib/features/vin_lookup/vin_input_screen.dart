@@ -1,12 +1,15 @@
+// vin_input_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import '../../services/vehicle_info_provider.dart';
 import '../../services/vin_validator.dart';
+import '../../models/app_exceptions.dart';
 import 'vehicle_variant_selection_screen.dart';
+import '../vehicle_details/vehicle_details_screen.dart';
 import 'package:logging/logging.dart';
-import '../vehicle_details/vehicle_details_screen.dart';  // Add this import
 
 class VinInputScreen extends StatefulWidget {
   const VinInputScreen({super.key});
@@ -22,6 +25,7 @@ class _VinInputScreenState extends State<VinInputScreen> {
   final TextRecognizer _textRecognizer = TextRecognizer();
   final ImagePicker _picker = ImagePicker();
   bool _isLoading = false;
+  String? _errorMessage;
 
   @override
   Widget build(BuildContext context) {
@@ -65,6 +69,39 @@ class _VinInputScreenState extends State<VinInputScreen> {
                   ),
                   const SizedBox(height: 32),
 
+                  // Error Message Display
+                  if (_errorMessage != null) ...[
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.red.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.error_outline, color: Colors.red.shade700),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              _errorMessage!,
+                              style: TextStyle(
+                                color: Colors.red.shade700,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close),
+                            onPressed: () => setState(() => _errorMessage = null),
+                            color: Colors.red.shade700,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+
                   // VIN Input Field
                   TextFormField(
                     controller: _vinController,
@@ -81,34 +118,16 @@ class _VinInputScreenState extends State<VinInputScreen> {
                         horizontal: 12,
                         vertical: 12,
                       ),
-                      isDense: true,
-                      prefixIconConstraints: const BoxConstraints(
-                        minWidth: 40,
-                        minHeight: 40,
-                      ),
+                      errorMaxLines: 2,
+                      helperText: 'Example: 1HGCM82633A123456',
+                      helperMaxLines: 2,
                     ),
+                    enabled: !_isLoading,
                     style: const TextStyle(
                       fontSize: 14,
                       letterSpacing: 0.8,
                     ),
                     maxLength: 17,
-                    buildCounter: (
-                        BuildContext context, {
-                          required int currentLength,
-                          required bool isFocused,
-                          required int? maxLength,
-                        }) {
-                      return Container(
-                        padding: const EdgeInsets.only(top: 2),
-                        child: Text(
-                          '$currentLength/$maxLength',
-                          style: TextStyle(
-                            color: currentLength == maxLength ? Colors.green : Colors.grey,
-                            fontSize: 12,
-                          ),
-                        ),
-                      );
-                    },
                     textCapitalization: TextCapitalization.characters,
                     validator: _validateVin,
                     onChanged: (value) {
@@ -118,68 +137,60 @@ class _VinInputScreenState extends State<VinInputScreen> {
                           selection: _vinController.selection,
                         );
                       }
+                      // Clear error message when user starts typing
+                      if (_errorMessage != null) {
+                        setState(() => _errorMessage = null);
+                      }
                     },
                   ),
                   const SizedBox(height: 24),
 
-                  // Scan Button
-                  OutlinedButton.icon(
-                    onPressed: _isLoading ? null : _scanVin,
-                    icon: const Icon(Icons.camera_alt),
-                    label: const Text('Scan VIN with Camera'),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                  // Action Buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _isLoading ? null : _scanVin,
+                          icon: const Icon(Icons.camera_alt),
+                          label: const Text('Scan VIN'),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: _isLoading ? null : _submitVin,
+                          icon: _isLoading
+                              ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                              : const Icon(Icons.search),
+                          label: Text(_isLoading ? 'Searching...' : 'Look Up'),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 16),
 
-                  // Submit Button
-                  ElevatedButton(
-                    onPressed: _isLoading ? null : _submitVin,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: _isLoading
-                        ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                        : const Text(
-                      'Look Up Vehicle',
-                      style: TextStyle(fontSize: 16),
-                    ),
-                  ),
-
-                  // Help Text
+                  // Help Section
                   if (!_isLoading) ...[
-                    const SizedBox(height: 24),
-                    const Text(
-                      'Where to find your VIN?',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'The VIN can be found on your vehicle registration, insurance card, or on the driver\'s side dashboard near the windshield.',
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontSize: 14,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
+                    const SizedBox(height: 32),
+                    _buildHelpSection(),
                   ],
                 ],
               ),
@@ -190,64 +201,116 @@ class _VinInputScreenState extends State<VinInputScreen> {
     );
   }
 
+  Widget _buildHelpSection() {
+    return Card(
+      elevation: 0,
+      color: Colors.blue.shade50,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Where to find your VIN?',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 8),
+            _buildHelpItem(
+              icon: Icons.credit_card,
+              text: 'Driver\'s side dashboard near windshield',
+            ),
+            _buildHelpItem(
+              icon: Icons.document_scanner,
+              text: 'Vehicle registration document',
+            ),
+            _buildHelpItem(
+              icon: Icons.car_repair,
+              text: 'Driver\'s side door jamb',
+            ),
+            _buildHelpItem(
+              icon: Icons.policy,
+              text: 'Insurance card or policy',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHelpItem({required IconData icon, required String text}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: Colors.blue.shade700),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                color: Colors.blue.shade900,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   String? _validateVin(String? value) {
     if (value == null || value.isEmpty) {
       return 'Please enter a VIN';
     }
+    if (value.length != 17) {
+      return 'VIN must be exactly 17 characters long';
+    }
     if (!VinValidator.isValid(value)) {
-      return 'Please enter a valid 17-character VIN';
+      return 'Please enter a valid VIN. Check for common mistakes:\n• Letter O vs number 0\n• Letter I vs number 1';
     }
     return null;
   }
 
   Future<void> _submitVin() async {
     if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+
       try {
-        _log.info('Submitting VIN: ${_vinController.text}');
         final provider = Provider.of<VehicleInfoProvider>(context, listen: false);
         await provider.fetchVehicleInfo(_vinController.text);
 
-        if (mounted) {
-          if (provider.error != null) {
-            _showErrorDialog(provider.error!);
-          } else {
-            // Check if we have basic vehicle info, regardless of variants
-            if (provider.vehicleInfo != null) {
-              if (provider.vehicleVariants.isNotEmpty) {
-                // If we have variants, go to variant selection
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const VehicleVariantSelectionScreen(),
-                  ),
-                );
-              } else {
-                // If no variants but we have vehicle info, go directly to details
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const VehicleDetailsScreen(),
-                  ),
-                );
+        if (!mounted) return;
 
-                // Optionally show an informative snackbar about safety ratings
-                if (provider.vehicleInfo!.year >= 1990) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Safety ratings are not available for this vehicle'),
-                      duration: Duration(seconds: 3),
-                    ),
-                  );
-                }
-              }
-            } else {
-              _showErrorDialog('Unable to retrieve vehicle information. Please try again.');
-            }
+        if (provider.error != null) {
+          setState(() {
+            _errorMessage = provider.getUserFriendlyError();
+          });
+        } else if (provider.vehicleInfo != null) {
+          if (provider.vehicleVariants.isNotEmpty) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const VehicleVariantSelectionScreen(),
+              ),
+            );
+          } else {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const VehicleDetailsScreen(),
+              ),
+            );
           }
         }
-      } catch (e) {
-        _showErrorDialog('Failed to fetch vehicle information. Please try again.');
       } finally {
         if (mounted) {
           setState(() => _isLoading = false);
@@ -258,12 +321,23 @@ class _VinInputScreenState extends State<VinInputScreen> {
 
   Future<void> _scanVin() async {
     try {
-      setState(() => _isLoading = true);
-      final XFile? image = await _picker.pickImage(source: ImageSource.camera);
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 100,
+        maxWidth: 2000,
+        maxHeight: 2000,
+      );
 
       if (image != null) {
         final inputImage = InputImage.fromFilePath(image.path);
         final RecognizedText recognizedText = await _textRecognizer.processImage(inputImage);
+
+        _log.info('Recognized text: ${recognizedText.text}');
 
         String text = recognizedText.text;
         String? vin = _extractVin(text);
@@ -272,47 +346,89 @@ class _VinInputScreenState extends State<VinInputScreen> {
           if (VinValidator.isValid(vin)) {
             setState(() {
               _vinController.text = vin;
+              _errorMessage = null;
             });
           } else {
             String? suggestion = VinValidator.suggestCorrection(vin);
             if (suggestion != null) {
               _showCorrectionDialog(vin, suggestion);
             } else {
-              _showErrorDialog('Invalid VIN detected: $vin');
+              _showErrorDialog(
+                'Could not validate the detected VIN: $vin\n\n'
+                    'Please try scanning again or enter the VIN manually.',
+              );
             }
           }
         } else {
           _showErrorDialog(
-            'No valid VIN found in the image. Please ensure the VIN is clearly visible and try again.',
+            'No valid VIN pattern found.\n\n'
+                'Recognized text:\n${recognizedText.text}\n\n'
+                'Please try scanning again or enter the VIN manually.',
           );
         }
       }
     } catch (e) {
-      _showErrorDialog('Error scanning VIN: ${e.toString()}');
+      _log.severe('Error scanning VIN: $e');
+      _showErrorDialog(
+        'Error scanning VIN: ${e.toString()}\n'
+            'Please try again or enter the VIN manually.',
+      );
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
   String? _extractVin(String text) {
     _log.info('Extracting VIN from text: $text');
-    RegExp wmiPattern = RegExp(r'\b[A-HJ-NPR-Z0-9]{4}');
-    Iterable<Match> wmiMatches = wmiPattern.allMatches(text);
 
-    for (Match match in wmiMatches) {
-      int startIndex = match.start;
-      if (startIndex + 17 <= text.length) {
-        String potentialVin = text.substring(startIndex, startIndex + 17);
-        _log.info('Potential VIN found: $potentialVin');
-        if (VinValidator.isValid(potentialVin)) {
-          _log.info('Valid VIN extracted: $potentialVin');
-          return potentialVin;
-        } else {
-          String? suggestion = VinValidator.suggestCorrection(potentialVin);
-          if (suggestion != null) {
-            _log.info('Suggested correction for VIN: $suggestion');
-            return suggestion;
-          }
+    // Clean the text
+    text = text.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), ' ');
+
+    // Look for exact 17-character sequences that could be VINs
+    RegExp vinPattern = RegExp(r'[A-HJ-NPR-Z0-9]{17}');
+    Iterable<Match> matches = vinPattern.allMatches(text);
+
+    for (Match match in matches) {
+      String potentialVin = match.group(0)!;
+      _log.info('Found potential VIN: $potentialVin');
+
+      if (VinValidator.isValid(potentialVin)) {
+        _log.info('Valid VIN extracted: $potentialVin');
+        return potentialVin;
+      }
+    }
+
+    // Look for partial matches
+    RegExp partialPattern = RegExp(r'[A-HJ-NPR-Z0-9]{15,17}');
+    matches = partialPattern.allMatches(text);
+
+    for (Match match in matches) {
+      String potentialVin = match.group(0)!;
+      _log.info('Found partial VIN: $potentialVin');
+
+      if (potentialVin.length == 17) {
+        String? suggestion = VinValidator.suggestCorrection(potentialVin);
+        if (suggestion != null) {
+          _log.info('Suggested correction for VIN: $suggestion');
+          return suggestion;
+        }
+      }
+    }
+
+    // Check individual words for VIN-like sequences
+    List<String> words = text.split(RegExp(r'\s+'));
+    for (String word in words) {
+      if (word.length >= 15 && word.length <= 17) {
+        _log.info('Checking word for VIN-like sequence: $word');
+
+        String paddedWord = word.padRight(17, '0');
+        String? suggestion = VinValidator.suggestCorrection(paddedWord);
+
+        if (suggestion != null) {
+          _log.info('Found possible VIN from word: $suggestion');
+          return suggestion;
         }
       }
     }
@@ -323,32 +439,33 @@ class _VinInputScreenState extends State<VinInputScreen> {
 
   void _showCorrectionDialog(String original, String suggestion) {
     showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
         title: const Text('VIN Correction'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('The scanned VIN might be incorrect.'),
+            const Text('The scanned VIN might need correction:'),
+            const SizedBox(height: 16),
+            _buildVinComparisonRow('Original', original),
             const SizedBox(height: 8),
-            Text('Original: $original', style: const TextStyle(fontWeight: FontWeight.bold)),
-            Text('Suggested: $suggestion', style: const TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
+            _buildVinComparisonRow('Suggested', suggestion),
+            const SizedBox(height: 16),
             const Text('Which would you like to use?'),
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              setState(() {
-                _vinController.text = original;
-              });
-            },
-            child: const Text('Use Original'),
-          ),
+        TextButton(
+        onPressed: () {
+      Navigator.pop(context);
+      setState(() {
+        _vinController.text = original;
+      });
+        },
+          child: const Text('Use Original'),
+        ),
           FilledButton(
             onPressed: () {
               Navigator.pop(context);
@@ -359,7 +476,34 @@ class _VinInputScreenState extends State<VinInputScreen> {
             child: const Text('Use Suggestion'),
           ),
         ],
-      ),
+        ),
+    );
+  }
+
+  Widget _buildVinComparisonRow(String label, String vin) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 80,
+          child: Text(
+            label,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ),
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              vin,
+              style: const TextStyle(fontFamily: 'monospace'),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
