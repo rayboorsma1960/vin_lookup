@@ -16,7 +16,7 @@ class VehicleDetailsScreen extends StatefulWidget {
 
 class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
   static final _log = Logger('VehicleDetailsScreen');
-  String? selectedRecallId; // Fixed the spelling here
+  String? selectedRecallId;
   bool _isRefreshing = false;
 
   Future<void> _handleRefresh() async {
@@ -60,7 +60,8 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
       body: Consumer<VehicleInfoProvider>(
         builder: (context, provider, child) {
           _log.info('Building VehicleDetailsScreen');
-          _log.info('Provider state - isLoading: ${provider.isLoading}, error: ${provider.error}');
+          _log.info('Provider state - isLoading: ${provider
+              .isLoading}, error: ${provider.error}');
 
           if (provider.isLoading || _isRefreshing) {
             return _buildLoadingState();
@@ -75,7 +76,6 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
       ),
     );
   }
-// Add these methods to _VehicleDetailsScreenState
 
   Widget _buildLoadingState() {
     return const Center(
@@ -194,190 +194,6 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
     );
   }
 
-
-  Widget _buildContent(VehicleInfo vehicleInfo) {
-    return RefreshIndicator(
-      onRefresh: _handleRefresh,
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildVehicleHeader(vehicleInfo),
-            const SizedBox(height: 20),
-            _buildVehicleImage(vehicleInfo),
-            const SizedBox(height: 20),
-            _buildInfoSection('Basic Information', [
-              _buildInfoTile('VIN', vehicleInfo.vin),
-              _buildInfoTile('Make', vehicleInfo.make),
-              _buildInfoTile('Model', vehicleInfo.model),
-              _buildInfoTile('Year', vehicleInfo.year.toString()),
-              _buildInfoTile('Vehicle Type', vehicleInfo.vehicleType),
-              _buildInfoTile('Engine Size', vehicleInfo.engineSize),
-              _buildInfoTile('Fuel Type', vehicleInfo.fuelType),
-              _buildInfoTile('Transmission', vehicleInfo.transmission),
-              _buildInfoTile('Drive Type', vehicleInfo.driveType),
-              _buildInfoTile('Doors', vehicleInfo.doors.toString()),
-            ]),
-            const SizedBox(height: 20),
-            _buildInfoSection('Manufacturing Information', [
-              _buildInfoTile('Manufacturer', vehicleInfo.manufacturerName),
-              _buildInfoTile('Plant City', vehicleInfo.plantCity),
-              _buildInfoTile('Plant State', vehicleInfo.plantState),
-              _buildInfoTile('Plant Country', vehicleInfo.plantCountry),
-              _buildInfoTile('Vehicle Descriptor', vehicleInfo.vehicleDescriptor),
-              _buildInfoTile('Body Class', vehicleInfo.bodyClass),
-              _buildInfoTile('Steering Location', vehicleInfo.steeringLocation),
-              _buildInfoTile('Series', vehicleInfo.series),
-              _buildInfoTile('Trim', vehicleInfo.trim),
-            ]),
-            const SizedBox(height: 20),
-            if (_hasEngineInfo(vehicleInfo)) ...[
-              _buildInfoSection('Engine Details', [
-                if (vehicleInfo.engineConfiguration != null)
-                  _buildInfoTile('Configuration', vehicleInfo.engineConfiguration!),
-                if (vehicleInfo.engineCylinders != null)
-                  _buildInfoTile('Cylinders', vehicleInfo.engineCylinders!),
-                if (vehicleInfo.engineHP != null)
-                  _buildInfoTile('Horsepower', vehicleInfo.engineHP!),
-                if (vehicleInfo.engineModel != null)
-                  _buildInfoTile('Engine Model', vehicleInfo.engineModel!),
-                if (vehicleInfo.engineManufacturer != null)
-                  _buildInfoTile('Engine Manufacturer', vehicleInfo.engineManufacturer!),
-                if (vehicleInfo.valveTrainDesign != null)
-                  _buildInfoTile('Valve Train Design', vehicleInfo.valveTrainDesign!),
-                if (vehicleInfo.turbo != null)
-                  _buildInfoTile('Turbo', vehicleInfo.turbo!),
-              ]),
-              const SizedBox(height: 20),
-            ],
-            if (_hasEVInfo(vehicleInfo)) ...[
-              _buildInfoSection('Electric Vehicle Details', [
-                if (vehicleInfo.batteryType != null)
-                  _buildInfoTile('Battery Type', vehicleInfo.batteryType!),
-                if (vehicleInfo.batteryKWh != null)
-                  _buildInfoTile('Battery Capacity', '${vehicleInfo.batteryKWh!} kWh'),
-                if (vehicleInfo.chargerLevel != null)
-                  _buildInfoTile('Charger Level', vehicleInfo.chargerLevel!),
-                if (vehicleInfo.chargerPowerKW != null)
-                  _buildInfoTile('Charger Power', '${vehicleInfo.chargerPowerKW!} kW'),
-                if (vehicleInfo.eVDriveUnit != null)
-                  _buildInfoTile('EV Drive Unit', vehicleInfo.eVDriveUnit!),
-                if (vehicleInfo.electrificationLevel != null)
-                  _buildInfoTile('Electrification Level', vehicleInfo.electrificationLevel!),
-              ]),
-              const SizedBox(height: 20),
-            ],
-            if (_hasSafetyFeatures(vehicleInfo)) ...[
-              _buildInfoSection('Safety Features', [
-                if (vehicleInfo.adaptiveCruiseControl != null)
-                  _buildFeatureTile('Adaptive Cruise Control', vehicleInfo.adaptiveCruiseControl!),
-                if (vehicleInfo.laneDepartureWarning != null)
-                  _buildFeatureTile('Lane Departure Warning', vehicleInfo.laneDepartureWarning!),
-                if (vehicleInfo.blindSpotMon != null)
-                  _buildFeatureTile('Blind Spot Monitoring', vehicleInfo.blindSpotMon!),
-                if (vehicleInfo.forwardCollisionWarning != null)
-                  _buildFeatureTile('Forward Collision Warning', vehicleInfo.forwardCollisionWarning!),
-                if (vehicleInfo.parkAssist != null)
-                  _buildFeatureTile('Parking Assist', vehicleInfo.parkAssist!),
-                if (vehicleInfo.rearCrossTrafficAlert != null)
-                  _buildFeatureTile('Rear Cross Traffic Alert', vehicleInfo.rearCrossTrafficAlert!),
-                if (vehicleInfo.automaticPedestrianAlertingSound != null)
-                  _buildFeatureTile('Pedestrian Alert Sound', vehicleInfo.automaticPedestrianAlertingSound!),
-              ]),
-              const SizedBox(height: 20),
-            ],
-            if (_hasWeightInfo(vehicleInfo)) ...[
-              _buildInfoSection('Weight & Dimensions', [
-                if (vehicleInfo.curbWeightLB != null)
-                  _buildInfoTile('Curb Weight', '${vehicleInfo.curbWeightLB!} lbs'),
-                if (vehicleInfo.wheelBaseLong != null)
-                  _buildInfoTile('Wheelbase (Long)', vehicleInfo.wheelBaseLong!),
-                if (vehicleInfo.wheelBaseShort != null)
-                  _buildInfoTile('Wheelbase (Short)', vehicleInfo.wheelBaseShort!),
-                if (vehicleInfo.trackWidth != null)
-                  _buildInfoTile('Track Width', vehicleInfo.trackWidth!),
-                if (vehicleInfo.wheelSizeFront != null)
-                  _buildInfoTile('Front Wheel Size', vehicleInfo.wheelSizeFront!),
-                if (vehicleInfo.wheelSizeRear != null)
-                  _buildInfoTile('Rear Wheel Size', vehicleInfo.wheelSizeRear!),
-              ]),
-              const SizedBox(height: 20),
-            ],
-            _buildSafetyRatingsSection(vehicleInfo.safetyRatings),
-            const SizedBox(height: 20),
-            _buildRecallsSection(vehicleInfo.recalls),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFeatureTile(String label, String value) {
-    final bool isAvailable = !['No', 'N/A', 'null', ''].contains(value.toLowerCase());
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        children: [
-          Icon(
-            isAvailable ? Icons.check_circle : Icons.remove_circle_outline,
-            size: 20,
-            color: isAvailable ? Colors.green : Colors.grey,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              label,
-              style: TextStyle(
-                color: isAvailable ? Colors.black : Colors.grey,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  bool _hasEngineInfo(VehicleInfo vehicleInfo) {
-    return vehicleInfo.engineConfiguration != null ||
-        vehicleInfo.engineCylinders != null ||
-        vehicleInfo.engineHP != null ||
-        vehicleInfo.engineModel != null ||
-        vehicleInfo.engineManufacturer != null ||
-        vehicleInfo.valveTrainDesign != null ||
-        vehicleInfo.turbo != null;
-  }
-
-  bool _hasEVInfo(VehicleInfo vehicleInfo) {
-    return vehicleInfo.batteryType != null ||
-        vehicleInfo.batteryKWh != null ||
-        vehicleInfo.chargerLevel != null ||
-        vehicleInfo.chargerPowerKW != null ||
-        vehicleInfo.eVDriveUnit != null ||
-        vehicleInfo.electrificationLevel != null;
-  }
-
-  bool _hasSafetyFeatures(VehicleInfo vehicleInfo) {
-    return vehicleInfo.adaptiveCruiseControl != null ||
-        vehicleInfo.laneDepartureWarning != null ||
-        vehicleInfo.blindSpotMon != null ||
-        vehicleInfo.forwardCollisionWarning != null ||
-        vehicleInfo.parkAssist != null ||
-        vehicleInfo.rearCrossTrafficAlert != null ||
-        vehicleInfo.automaticPedestrianAlertingSound != null;
-  }
-
-  bool _hasWeightInfo(VehicleInfo vehicleInfo) {
-    return vehicleInfo.curbWeightLB != null ||
-        vehicleInfo.wheelBaseLong != null ||
-        vehicleInfo.wheelBaseShort != null ||
-        vehicleInfo.trackWidth != null ||
-        vehicleInfo.wheelSizeFront != null ||
-        vehicleInfo.wheelSizeRear != null;
-  }
-  // Add these methods to _VehicleDetailsScreenState
-
   Widget _buildVehicleHeader(VehicleInfo vehicleInfo) {
     return Card(
       elevation: 2,
@@ -390,7 +206,8 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    '${vehicleInfo.year} ${vehicleInfo.make} ${vehicleInfo.model}',
+                    '${vehicleInfo.year} ${vehicleInfo.make} ${vehicleInfo
+                        .model}',
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -427,7 +244,8 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
           children: [
             Text(
                 title,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)
+                style: const TextStyle(
+                    fontSize: 18, fontWeight: FontWeight.bold)
             ),
             const SizedBox(height: 8),
             ...children,
@@ -445,7 +263,8 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
         children: [
           Expanded(
             flex: 2,
-            child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+            child: Text(
+                label, style: const TextStyle(fontWeight: FontWeight.bold)),
           ),
           Expanded(
             flex: 3,
@@ -456,175 +275,233 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
     );
   }
 
-  Widget _buildSafetyRatingsSection(Map<String, dynamic> ratings) {
-    if (ratings.isEmpty) {
-      return Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Safety Ratings',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-              Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.safety_check,
-                      size: 48,
-                      color: Colors.grey[400],
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'No safety ratings available for this vehicle',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Safety Ratings',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            _buildSafetyRatings(ratings),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSafetyRatings(Map<String, dynamic> ratings) {
-    String? getRating(String key) {
-      final value = ratings[key];
-      if (value == null || value.toString().trim().isEmpty) {
-        return null;
-      }
-      return value.toString();
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildRatingTile('Overall Rating', getRating('OverallRating')),
-        _buildDivider(),
-        _buildRatingSection(
-          'Crash Tests',
-          [
-            _buildRatingTile('Frontal Crash', getRating('OverallFrontCrashRating')),
-            _buildRatingTile('Side Crash', getRating('OverallSideCrashRating')),
-            _buildRatingTile('Rollover', getRating('RolloverRating')),
-          ],
-        ),
-        _buildDivider(),
-        _buildRatingSection(
-          'Detailed Crash Ratings',
-          [
-            _buildRatingTile('Front Crash Driver Side', getRating('FrontCrashDriversideRating')),
-            _buildRatingTile('Front Crash Passenger Side', getRating('FrontCrashPassengersideRating')),
-            _buildRatingTile('Side Crash Driver Side', getRating('SideCrashDriversideRating')),
-            _buildRatingTile('Side Crash Passenger Side', getRating('SideCrashPassengersideRating')),
-          ],
-        ),
-        const SizedBox(height: 16),
-        _buildCrashTestImages(ratings),
-      ],
-    );
-  }
-
-  Widget _buildRatingSection(String title, List<Widget> ratings) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 8),
-        ...ratings,
-      ],
-    );
-  }
-
-  Widget _buildDivider() {
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 12),
-      child: Divider(),
-    );
-  }
-
-  Widget _buildRatingTile(String label, String? rating) {
+  Widget _buildFeatureTile(String label, String value) {
+    final bool isAvailable = !['No', 'N/A', 'null', ''].contains(
+        value.toLowerCase());
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
         children: [
-          Expanded(
-            flex: 2,
-            child: Text(label, style: const TextStyle(fontSize: 14)),
+          Icon(
+            isAvailable ? Icons.check_circle : Icons.remove_circle_outline,
+            size: 20,
+            color: isAvailable ? Colors.green : Colors.grey,
           ),
+          const SizedBox(width: 8),
           Expanded(
-            flex: 3,
-            child: rating == null || rating == 'Not Rated'
-                ? const Text(
-              'Not Rated',
+            child: Text(
+              label,
               style: TextStyle(
-                fontStyle: FontStyle.italic,
-                color: Colors.grey,
+                color: isAvailable ? Colors.black : Colors.grey,
               ),
-            )
-                : _buildStarRating(int.tryParse(rating) ?? 0),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildStarRating(int rating) {
-    return Row(
-      children: [
-        ...List.generate(
-          5,
-              (index) => Padding(
-            padding: const EdgeInsets.only(right: 2),
-            child: Icon(
-              index < rating ? Icons.star : Icons.star_border,
-              color: Colors.amber,
-              size: 20,
-            ),
-          ),
+  Widget _buildContent(VehicleInfo vehicleInfo) {
+    return RefreshIndicator(
+      onRefresh: _handleRefresh,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildVehicleHeader(vehicleInfo),
+            const SizedBox(height: 20),
+            _buildVehicleImage(vehicleInfo),
+            const SizedBox(height: 20),
+            _buildInfoSection('Vehicle Information', [
+              _buildInfoTile('VIN', vehicleInfo.vin),
+              _buildInfoTile(
+                  'Make', '${vehicleInfo.make} (ID: ${vehicleInfo.makeId})'),
+              _buildInfoTile(
+                  'Model', '${vehicleInfo.model} (ID: ${vehicleInfo.modelId})'),
+              _buildInfoTile('Year', vehicleInfo.year.toString()),
+              _buildInfoTile('Vehicle Type', vehicleInfo.vehicleType),
+              _buildInfoTile('Body Class', vehicleInfo.bodyClass),
+              _buildInfoTile('Series', vehicleInfo.series),
+              if (vehicleInfo.series2.isNotEmpty)
+                _buildInfoTile('Series 2', vehicleInfo.series2),
+              _buildInfoTile('Trim', vehicleInfo.trim),
+              if (vehicleInfo.trim2.isNotEmpty)
+                _buildInfoTile('Trim 2', vehicleInfo.trim2),
+              _buildInfoTile('Doors', vehicleInfo.doors.toString()),
+            ]),
+            const SizedBox(height: 20),
+            _buildInfoSection('Engine Information', [
+              _buildInfoTile('Configuration', vehicleInfo.engineConfiguration),
+              _buildInfoTile('Cylinders', vehicleInfo.engineCylinders),
+              _buildInfoTile('Model', vehicleInfo.engineModel),
+              _buildInfoTile('Manufacturer', vehicleInfo.engineManufacturer),
+              _buildInfoTile(
+                  'Displacement (CC)', vehicleInfo.engineDisplacementCC),
+              _buildInfoTile(
+                  'Displacement (CI)', vehicleInfo.engineDisplacementCI),
+              _buildInfoTile(
+                  'Displacement (L)', vehicleInfo.engineDisplacementL),
+              _buildInfoTile('Horsepower', vehicleInfo.engineHP),
+              _buildInfoTile('Power (kW)', vehicleInfo.engineKW),
+              _buildInfoTile('Cycles', vehicleInfo.engineCycles),
+              _buildInfoTile('Fuel Injection', vehicleInfo.fuelInjectionType),
+              _buildInfoTile('Primary Fuel', vehicleInfo.fuelTypePrimary),
+              if (vehicleInfo.fuelTypeSecondary.isNotEmpty)
+                _buildInfoTile('Secondary Fuel', vehicleInfo.fuelTypeSecondary),
+              if (vehicleInfo.otherEngineInfo.isNotEmpty)
+                _buildInfoTile('Additional Info', vehicleInfo.otherEngineInfo),
+              if (vehicleInfo.turbo.isNotEmpty)
+                _buildInfoTile('Turbo', vehicleInfo.turbo),
+            ]),
+            const SizedBox(height: 20),
+            _buildTransmissionDriveSection(vehicleInfo),
+            const SizedBox(height: 20),
+            _buildDimensionsWeightSection(vehicleInfo),
+            const SizedBox(height: 20),
+            _buildManufacturingSection(vehicleInfo),
+            const SizedBox(height: 20),
+            _buildSafetyFeaturesSection(vehicleInfo),
+            const SizedBox(height: 20),
+            _buildSafetyEquipmentSection(vehicleInfo),
+            const SizedBox(height: 20),
+            _buildLightingSection(vehicleInfo),
+            const SizedBox(height: 20),
+            _buildAdditionalFeaturesSection(vehicleInfo),
+            const SizedBox(height: 20),
+            _buildSafetyRatingsSection(vehicleInfo.safetyRatings),
+            const SizedBox(height: 20),
+            _buildRecallsSection(vehicleInfo.recalls),
+          ],
         ),
-        const SizedBox(width: 4),
-        Text(
-          '$rating/5',
-          style: const TextStyle(
-            color: Colors.grey,
-            fontSize: 12,
-          ),
-        ),
-      ],
+      ),
     );
   }
-  // Add these methods to _VehicleDetailsScreenState
+
+  Widget _buildTransmissionDriveSection(VehicleInfo vehicleInfo) {
+    return _buildInfoSection('Transmission & Drive', [
+      _buildInfoTile('Drive Type', vehicleInfo.driveType),
+      _buildInfoTile('Transmission', vehicleInfo.transmissionStyle),
+      if (vehicleInfo.transmissionSpeeds.isNotEmpty)
+        _buildInfoTile('Speeds', vehicleInfo.transmissionSpeeds),
+    ]);
+  }
+
+  Widget _buildDimensionsWeightSection(VehicleInfo vehicleInfo) {
+    return _buildInfoSection('Dimensions & Weight', [
+      _buildInfoTile('Wheelbase Type', vehicleInfo.wheelBaseType),
+      if (vehicleInfo.wheelBaseShort.isNotEmpty)
+        _buildInfoTile('Wheelbase (Short)', vehicleInfo.wheelBaseShort),
+      if (vehicleInfo.wheelBaseLong.isNotEmpty)
+        _buildInfoTile('Wheelbase (Long)', vehicleInfo.wheelBaseLong),
+      _buildInfoTile('Track Width', vehicleInfo.trackWidth),
+      _buildInfoTile('Front Wheel Size', vehicleInfo.wheelSizeFront),
+      _buildInfoTile('Rear Wheel Size', vehicleInfo.wheelSizeRear),
+      _buildInfoTile('Curb Weight', vehicleInfo.curbWeightLB),
+      _buildInfoTile('GVWR', vehicleInfo.gvwr),
+      _buildInfoTile('GCWR', vehicleInfo.gcwr),
+      if (vehicleInfo.bedLengthIN.isNotEmpty)
+        _buildInfoTile('Bed Length', '${vehicleInfo.bedLengthIN} inches'),
+      if (vehicleInfo.bedType.isNotEmpty)
+        _buildInfoTile('Bed Type', vehicleInfo.bedType),
+      if (vehicleInfo.bodyCabType.isNotEmpty)
+        _buildInfoTile('Cab Type', vehicleInfo.bodyCabType),
+    ]);
+  }
+
+  Widget _buildManufacturingSection(VehicleInfo vehicleInfo) {
+    return _buildInfoSection('Manufacturing Information', [
+      _buildInfoTile('Manufacturer',
+          '${vehicleInfo.manufacturerName} (ID: ${vehicleInfo
+              .manufacturerId})'),
+      _buildInfoTile('Plant Location',
+          '${vehicleInfo.plantCity}, ${vehicleInfo.plantState}, ${vehicleInfo
+              .plantCountry}'),
+      if (vehicleInfo.plantCompanyName.isNotEmpty)
+        _buildInfoTile('Plant Company', vehicleInfo.plantCompanyName),
+      _buildInfoTile('Vehicle Descriptor', vehicleInfo.vehicleDescriptor),
+    ]);
+  }
+
+  Widget _buildSafetyFeaturesSection(VehicleInfo vehicleInfo) {
+    return _buildInfoSection('Safety Features', [
+      _buildFeatureTile('ABS', vehicleInfo.abs),
+      _buildFeatureTile('Traction Control', vehicleInfo.traction),
+      _buildFeatureTile('Stability Control', vehicleInfo.esc),
+      _buildFeatureTile('Brake System', vehicleInfo.brakeSystemType),
+      if (vehicleInfo.brakeSystemDesc.isNotEmpty)
+        _buildInfoTile('Brake System Details', vehicleInfo.brakeSystemDesc),
+      _buildFeatureTile(
+          'Adaptive Cruise Control', vehicleInfo.adaptiveCruiseControl),
+      _buildFeatureTile(
+          'Lane Departure Warning', vehicleInfo.laneDepartureWarning),
+      _buildFeatureTile('Lane Keep System', vehicleInfo.laneKeepSystem),
+      _buildFeatureTile('Lane Centering', vehicleInfo.laneCenteringAssistance),
+      _buildFeatureTile('Blind Spot Monitor', vehicleInfo.blindSpotMon),
+      _buildFeatureTile(
+          'Blind Spot Intervention', vehicleInfo.blindSpotIntervention),
+      _buildFeatureTile(
+          'Forward Collision Warning', vehicleInfo.forwardCollisionWarning),
+      _buildFeatureTile(
+          'Emergency Braking', vehicleInfo.automaticEmergencyBraking),
+      _buildFeatureTile(
+          'Rear Cross Traffic Alert', vehicleInfo.rearCrossTrafficAlert),
+      _buildFeatureTile(
+          'Rear Visibility System', vehicleInfo.rearVisibilitySystem),
+      _buildFeatureTile('Park Assist', vehicleInfo.parkAssist),
+      _buildFeatureTile('TPMS', vehicleInfo.tpms),
+    ]);
+  }
+
+  Widget _buildSafetyEquipmentSection(VehicleInfo vehicleInfo) {
+    return _buildInfoSection('Safety Equipment', [
+      _buildFeatureTile('Curtain Airbags', vehicleInfo.airBagLocCurtain),
+      _buildFeatureTile('Front Airbags', vehicleInfo.airBagLocFront),
+      _buildFeatureTile('Knee Airbags', vehicleInfo.airBagLocKnee),
+      _buildFeatureTile(
+          'Seat Cushion Airbags', vehicleInfo.airBagLocSeatCushion),
+      _buildFeatureTile('Side Airbags', vehicleInfo.airBagLocSide),
+      _buildFeatureTile('Pretensioner', vehicleInfo.pretensioner),
+      _buildFeatureTile('Seat Belts', vehicleInfo.seatBeltsAll),
+    ]);
+  }
+
+  Widget _buildLightingSection(VehicleInfo vehicleInfo) {
+    return _buildInfoSection('Lighting', [
+      _buildFeatureTile(
+          'Daytime Running Lights', vehicleInfo.daytimeRunningLight),
+      _buildFeatureTile('Adaptive Headlights', vehicleInfo.adaptiveHeadlights),
+      _buildFeatureTile(
+          'Adaptive Driving Beam', vehicleInfo.adaptiveDrivingBeam),
+      if (vehicleInfo.headlampLightSource.isNotEmpty)
+        _buildInfoTile(
+            'Headlamp Light Source', vehicleInfo.headlampLightSource),
+      _buildFeatureTile('Auto Headlamp Switching',
+          vehicleInfo.semiautomaticHeadlampBeamSwitching),
+    ]);
+  }
+
+  Widget _buildAdditionalFeaturesSection(VehicleInfo vehicleInfo) {
+    final List<Widget> features = [];
+
+    if (vehicleInfo.basePrice.isNotEmpty)
+      features.add(_buildInfoTile('Base Price', vehicleInfo.basePrice));
+    if (vehicleInfo.destinationMarket.isNotEmpty)
+      features.add(_buildInfoTile('Market', vehicleInfo.destinationMarket));
+    if (vehicleInfo.entertainmentSystem.isNotEmpty)
+      features.add(
+          _buildInfoTile('Entertainment', vehicleInfo.entertainmentSystem));
+    if (vehicleInfo.keylessIgnition.isNotEmpty)
+      features.add(
+          _buildFeatureTile('Keyless Ignition', vehicleInfo.keylessIgnition));
+    if (vehicleInfo.saeAutomationLevel.isNotEmpty)
+      features.add(
+          _buildInfoTile('Automation Level', vehicleInfo.saeAutomationLevel));
+
+    return features.isEmpty ? const SizedBox.shrink() :
+    _buildInfoSection('Additional Features', features);
+  }
 
   Widget _buildVehicleImage(VehicleInfo vehicleInfo) {
     return Card(
@@ -637,7 +514,8 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
   }
 
   Widget _buildImageWithErrorHandling(VehicleInfo vehicleInfo) {
-    String? nhtsaImageUrl = vehicleInfo.safetyRatings['VehiclePicture'] as String?;
+    String? nhtsaImageUrl = vehicleInfo
+        .safetyRatings['VehiclePicture'] as String?;
     String? googleImageUrl = vehicleInfo.imageUrl;
 
     if (nhtsaImageUrl == null && googleImageUrl.isEmpty) {
@@ -707,6 +585,184 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSafetyRatingsSection(Map<String, dynamic> ratings) {
+    if (ratings.isEmpty) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Safety Ratings',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.safety_check,
+                      size: 48,
+                      color: Colors.grey[400],
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'No safety ratings available for this vehicle',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Safety Ratings',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            _buildSafetyRatings(ratings),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSafetyRatings(Map<String, dynamic> ratings) {
+    String? getRating(String key) {
+      final value = ratings[key];
+      if (value == null || value
+          .toString()
+          .trim()
+          .isEmpty) {
+        return null;
+      }
+      return value.toString();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildRatingTile('Overall Rating', getRating('OverallRating')),
+        _buildDivider(),
+        _buildRatingSection(
+          'Crash Tests',
+          [
+            _buildRatingTile(
+                'Frontal Crash', getRating('OverallFrontCrashRating')),
+            _buildRatingTile('Side Crash', getRating('OverallSideCrashRating')),
+            _buildRatingTile('Rollover', getRating('RolloverRating')),
+          ],
+        ),
+        _buildDivider(),
+        _buildRatingSection(
+          'Detailed Crash Ratings',
+          [
+            _buildRatingTile('Front Crash Driver Side',
+                getRating('FrontCrashDriversideRating')),
+            _buildRatingTile('Front Crash Passenger Side',
+                getRating('FrontCrashPassengersideRating')),
+            _buildRatingTile('Side Crash Driver Side',
+                getRating('SideCrashDriversideRating')),
+            _buildRatingTile('Side Crash Passenger Side',
+                getRating('SideCrashPassengersideRating')),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _buildCrashTestImages(ratings),
+      ],
+    );
+  }
+
+  Widget _buildRatingSection(String title, List<Widget> ratings) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8),
+        ...ratings,
+      ],
+    );
+  }
+
+  Widget _buildDivider() {
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 12),
+      child: Divider(),
+    );
+  }
+
+  Widget _buildRatingTile(String label, String? rating) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: Text(label, style: const TextStyle(fontSize: 14)),
+          ),
+          Expanded(
+            flex: 3,
+            child: rating == null || rating == 'Not Rated'
+                ? const Text(
+              'Not Rated',
+              style: TextStyle(
+                fontStyle: FontStyle.italic,
+                color: Colors.grey,
+              ),
+            )
+                : _buildStarRating(int.tryParse(rating) ?? 0),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStarRating(int rating) {
+    return Row(
+      children: [
+        ...List.generate(
+          5,
+              (index) =>
+              Padding(
+                padding: const EdgeInsets.only(right: 2),
+                child: Icon(
+                  index < rating ? Icons.star : Icons.star_border,
+                  color: Colors.amber,
+                  size: 20,
+                ),
+              ),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          '$rating/5',
+          style: const TextStyle(
+            color: Colors.grey,
+            fontSize: 12,
+          ),
+        ),
+      ],
     );
   }
 
@@ -972,7 +1028,8 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
     );
   }
 
-  Widget _buildRecallDetailItem(String label, String? value, {required IconData icon}) {
+  Widget _buildRecallDetailItem(String label, String? value,
+      {required IconData icon}) {
     if (value == null || value.isEmpty) return const SizedBox.shrink();
 
     return Padding(

@@ -28,57 +28,123 @@ class NHTSAApiService {
         final decodedResponse = json.decode(response.body);
         final results = decodedResponse['Results'][0] as Map<String, dynamic>;
 
+        _log.info('Decoded VIN response: $results');
+
         return VehicleInfo(
+          // Basic Vehicle Identification
           vin: vin,
           make: results['Make'] ?? 'N/A',
+          makeId: results['MakeID'] ?? 'N/A',
           model: results['Model'] ?? 'N/A',
+          modelId: results['ModelID'] ?? 'N/A',
           year: int.tryParse(results['ModelYear'] ?? '') ?? 0,
+          manufacturerId: results['ManufacturerId'] ?? 'N/A',
+          manufacturerName: results['Manufacturer'] ?? 'N/A',
+          vehicleDescriptor: results['VehicleDescriptor'] ?? 'N/A',
+
+          // Vehicle Classification
           vehicleType: results['VehicleType'] ?? 'N/A',
-          engineSize: results['EngineCylinders'] ?? 'N/A',
-          fuelType: results['FuelTypePrimary'] ?? 'N/A',
-          transmission: results['TransmissionStyle'] ?? 'N/A',
+          bodyClass: results['BodyClass'] ?? 'N/A',
+          series: results['Series'] ?? 'N/A',
+          series2: results['Series2'] ?? 'N/A',
+          trim: results['Trim'] ?? 'N/A',
+          trim2: results['Trim2'] ?? 'N/A',
+
+          // Engine Information
+          engineConfiguration: results['EngineConfiguration'] ?? 'N/A',
+          engineCylinders: results['EngineCylinders'] ?? 'N/A',
+          engineModel: results['EngineModel'] ?? 'N/A',
+          engineManufacturer: results['EngineManufacturer'] ?? 'N/A',
+          engineDisplacementCC: results['DisplacementCC'] ?? 'N/A',
+          engineDisplacementCI: results['DisplacementCI'] ?? 'N/A',
+          engineDisplacementL: results['DisplacementL'] ?? 'N/A',
+          engineHP: results['EngineHP'] ?? 'N/A',
+          engineKW: results['EngineKW'] ?? 'N/A',
+          engineCycles: results['EngineCycles'] ?? 'N/A',
+          fuelInjectionType: results['FuelInjectionType'] ?? 'N/A',
+          fuelTypePrimary: results['FuelTypePrimary'] ?? 'N/A',
+          fuelTypeSecondary: results['FuelTypeSecondary'] ?? 'N/A',
+          otherEngineInfo: results['OtherEngineInfo'] ?? 'N/A',
+          turbo: results['Turbo'] ?? 'N/A',
+
+          // Transmission & Drive
           driveType: results['DriveType'] ?? 'N/A',
+          transmissionStyle: results['TransmissionStyle'] ?? 'N/A',
+          transmissionSpeeds: results['TransmissionSpeeds'] ?? 'N/A',
+
+          // Dimensions & Weight
           doors: int.tryParse(results['Doors'] ?? '') ?? 0,
+          wheelBaseType: results['WheelBaseType'] ?? 'N/A',
+          wheelBaseShort: results['WheelBaseShort'] ?? 'N/A',
+          wheelBaseLong: results['WheelBaseLong'] ?? 'N/A',
+          trackWidth: results['TrackWidth'] ?? 'N/A',
+          wheelSizeFront: results['WheelSizeFront'] ?? 'N/A',
+          wheelSizeRear: results['WheelSizeRear'] ?? 'N/A',
+          curbWeightLB: results['CurbWeightLB'] ?? 'N/A',
+          gvwr: results['GVWR'] ?? 'N/A',
+          gcwr: results['GCWR'] ?? 'N/A',
+          gcwrTo: results['GCWR_to'] ?? 'N/A',
+          gvwrTo: results['GVWR_to'] ?? 'N/A',
+          bedLengthIN: results['BedLengthIN'] ?? 'N/A',
+          bedType: results['BedType'] ?? 'N/A',
+          bodyCabType: results['BodyCabType'] ?? 'N/A',
+
+          // Plant Information
+          plantCity: results['PlantCity'] ?? 'N/A',
+          plantState: results['PlantState'] ?? 'N/A',
+          plantCountry: results['PlantCountry'] ?? 'N/A',
+          plantCompanyName: results['PlantCompanyName'] ?? 'N/A',
+
+          // Safety Features
+          abs: results['ABS'] ?? 'N/A',
+          traction: results['TractionControl'] ?? 'N/A',
+          esc: results['ESC'] ?? 'N/A',
+          brakeSystemType: results['BrakeSystemType'] ?? 'N/A',
+          brakeSystemDesc: results['BrakeSystemDesc'] ?? 'N/A',
+          activeSafetySysNote: results['ActiveSafetySysNote'] ?? 'N/A',
+          adaptiveCruiseControl: results['AdaptiveCruiseControl'] ?? 'N/A',
+          adaptiveHeadlights: results['AdaptiveHeadlights'] ?? 'N/A',
+          adaptiveDrivingBeam: results['AdaptiveDrivingBeam'] ?? 'N/A',
+          blindSpotMon: results['BlindSpotMon'] ?? 'N/A',
+          blindSpotIntervention: results['BlindSpotIntervention'] ?? 'N/A',
+          laneDepartureWarning: results['LaneDepartureWarning'] ?? 'N/A',
+          laneKeepSystem: results['LaneKeepSystem'] ?? 'N/A',
+          laneCenteringAssistance: results['LaneCenteringAssistance'] ?? 'N/A',
+          forwardCollisionWarning: results['ForwardCollisionWarning'] ?? 'N/A',
+          automaticEmergencyBraking: results['RearAutomaticEmergencyBraking'] ?? 'N/A',
+          rearCrossTrafficAlert: results['RearCrossTrafficAlert'] ?? 'N/A',
+          rearVisibilitySystem: results['RearVisibilitySystem'] ?? 'N/A',
+          parkAssist: results['ParkAssist'] ?? 'N/A',
+          tpms: results['TPMS'] ?? 'N/A',
+
+          // Additional Safety Equipment
+          airBagLocCurtain: results['AirBagLocCurtain'] ?? 'N/A',
+          airBagLocFront: results['AirBagLocFront'] ?? 'N/A',
+          airBagLocKnee: results['AirBagLocKnee'] ?? 'N/A',
+          airBagLocSeatCushion: results['AirBagLocSeatCushion'] ?? 'N/A',
+          airBagLocSide: results['AirBagLocSide'] ?? 'N/A',
+          pretensioner: results['Pretensioner'] ?? 'N/A',
+          seatBeltsAll: results['SeatBeltsAll'] ?? 'N/A',
+
+          // Lighting
+          daytimeRunningLight: results['DaytimeRunningLight'] ?? 'N/A',
+          headlampLightSource: results['LowerBeamHeadlampLightSource'] ?? 'N/A',
+          semiautomaticHeadlampBeamSwitching: results['SemiautomaticHeadlampBeamSwitching'] ?? 'N/A',
+
+          // Price & Market
+          basePrice: results['BasePrice'] ?? 'N/A',
+          destinationMarket: results['DestinationMarket'] ?? 'N/A',
+
+          // Additional Features
+          entertainmentSystem: results['EntertainmentSystem'] ?? 'N/A',
+          keylessIgnition: results['KeylessIgnition'] ?? 'N/A',
+          saeAutomationLevel: results['SAEAutomationLevel'] ?? 'N/A',
+
+          // API Related
           imageUrl: '',
           recalls: [],
           safetyRatings: {},
           complaints: [],
-          manufacturerName: results['Manufacturer'] ?? 'N/A',
-          plantCity: results['PlantCity'] ?? 'N/A',
-          plantState: results['PlantState'] ?? 'N/A',
-          plantCountry: results['PlantCountry'] ?? 'N/A',
-          vehicleDescriptor: results['VehicleDescriptor'] ?? 'N/A',
-          bodyClass: results['BodyClass'] ?? 'N/A',
-          steeringLocation: results['SteeringLocation'] ?? 'N/A',
-          series: results['Series'] ?? 'N/A',
-          trim: results['Trim'] ?? 'N/A',
-          // New fields
-          engineConfiguration: results['EngineConfiguration'],
-          engineCylinders: results['EngineCylinders'],
-          engineHP: results['EngineHP'],
-          engineModel: results['EngineModel'],
-          engineManufacturer: results['EngineManufacturer'],
-          valveTrainDesign: results['ValveTrainDesign'],
-          turbo: results['Turbo'],
-          batteryType: results['BatteryType'],
-          batteryKWh: results['BatteryKWh'],
-          chargerLevel: results['ChargerLevel'],
-          chargerPowerKW: results['ChargerPowerKW'],
-          eVDriveUnit: results['EVDriveUnit'],
-          electrificationLevel: results['ElectrificationLevel'],
-          adaptiveCruiseControl: results['AdaptiveCruiseControl'],
-          laneDepartureWarning: results['LaneDepartureWarning'],
-          blindSpotMon: results['BlindSpotMon'],
-          forwardCollisionWarning: results['ForwardCollisionWarning'],
-          parkAssist: results['ParkAssist'],
-          rearCrossTrafficAlert: results['RearCrossTrafficAlert'],
-          automaticPedestrianAlertingSound: results['AutomaticPedestrianAlertingSound'],
-          curbWeightLB: results['CurbWeightLB'],
-          wheelBaseLong: results['WheelBaseLong'],
-          wheelBaseShort: results['WheelBaseShort'],
-          trackWidth: results['TrackWidth'],
-          wheelSizeFront: results['WheelSizeFront'],
-          wheelSizeRear: results['WheelSizeRear'],
         );
       } else {
         throw Exception('Failed to load extended vehicle information. Status code: ${response.statusCode}');
