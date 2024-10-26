@@ -8,6 +8,7 @@ import 'package:barcode_scan2/barcode_scan2.dart';
 import '../../services/vehicle_info_provider.dart';
 import '../../services/vin_validator.dart';
 import 'vehicle_variant_selection_screen.dart';
+import '../../features/feedback/feedback_screen.dart';
 import '../vehicle_details/vehicle_details_screen.dart';
 import 'package:logging/logging.dart';
 import 'package:flutter/services.dart' show PlatformException;
@@ -34,6 +35,26 @@ class _VinInputScreenState extends State<VinInputScreen> {
       appBar: AppBar(
         title: const Text('Vehicle Lookup'),
         elevation: 0,
+        actions: [
+          TextButton.icon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const FeedbackScreen(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.feedback, color: Colors.white),
+            label: const Text(
+              'Feedback',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
