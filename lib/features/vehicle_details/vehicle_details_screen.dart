@@ -561,24 +561,147 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
                   ),
               ]),
 
-            // Recalls
             if (vehicleInfo.recalls.isNotEmpty)
               _buildInfoSection('Recalls',
-                vehicleInfo.recalls.map((recall) => Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildInfoTile('Campaign Number',
-                        recall['NHTSACampaignNumber']?.toString() ?? ''),
-                    _buildInfoTile('Component',
-                        recall['Component']?.toString() ?? ''),
-                    _buildInfoTile('Summary',
-                        recall['Summary']?.toString() ?? ''),
-                    _buildInfoTile('Consequence',
-                        recall['Consequence']?.toString() ?? ''),
-                    _buildInfoTile('Remedy',
-                        recall['Remedy']?.toString() ?? ''),
-                    const Divider(),
-                  ],
+                vehicleInfo.recalls.map((recall) => Card(
+                  margin: const EdgeInsets.only(bottom: 16.0),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Campaign Number Row
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8.0,
+                            vertical: 4.0,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.red[50],
+                            borderRadius: BorderRadius.circular(4.0),
+                          ),
+                          child: Text(
+                            'Campaign #${recall['NHTSACampaignNumber']?.toString() ?? ''}',
+                            style: TextStyle(
+                              color: Colors.red[900],
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Component Row
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(  // Removed const
+                              'Component: ',
+                              style: TextStyle(  // Removed const
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                recall['Component']?.toString() ?? '',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Summary Section
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(  // Removed const
+                              'Summary',
+                              style: TextStyle(  // Removed const
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              recall['Summary']?.toString() ?? '',
+                              style: const TextStyle(fontSize: 14),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Consequence Section
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(  // Removed const
+                              'Consequence',
+                              style: TextStyle(  // Removed const
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(8.0),
+                              decoration: BoxDecoration(
+                                color: Colors.orange[50],
+                                borderRadius: BorderRadius.circular(4.0),
+                              ),
+                              child: Text(
+                                recall['Consequence']?.toString() ?? '',
+                                style: TextStyle(  // Removed const
+                                  fontSize: 14,
+                                  color: Colors.grey[800],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Remedy Section
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(  // Removed const
+                              'Remedy',
+                              style: TextStyle(  // Removed const
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(8.0),
+                              decoration: BoxDecoration(
+                                color: Colors.green[50],
+                                borderRadius: BorderRadius.circular(4.0),
+                              ),
+                              child: Text(
+                                recall['Remedy']?.toString() ?? '',
+                                style: TextStyle(  // Removed const
+                                  fontSize: 14,
+                                  color: Colors.grey[800],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
                 )).toList(),
               ),
           ],
@@ -586,6 +709,7 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
       ),
     );
   }
+
   Widget _buildLoadingState() {
     return const Center(
       child: Column(
