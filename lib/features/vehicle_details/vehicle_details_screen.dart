@@ -2,10 +2,13 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 import '../../services/vehicle_info_provider.dart';
 import '../../models/vehicle_info.dart';
 import '../../models/app_exceptions.dart';
 import 'package:logging/logging.dart';
+import 'package:http/http.dart' as http;  // Add this line
 
 class VehicleDetailsScreen extends StatefulWidget {
   const VehicleDetailsScreen({super.key});
@@ -119,6 +122,80 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Future<bool> _isVideoAvailable(String url) async {
+    try {
+      final Uri uri = Uri.parse(url);
+      final response = await http.head(uri);
+      return response.statusCode == 200;
+    } catch (e) {
+      _log.warning('Error checking video availability: $e');
+      return false;
+    }
+  }
+
+  Widget _buildVideoLink(String label, String? url) {
+    if (url == null || url.isEmpty) return const SizedBox.shrink();
+
+    return FutureBuilder<bool>(
+      future: _isVideoAvailable(url),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data == false) {
+          return const SizedBox.shrink();
+        }
+
+        return InkWell(
+          onTap: () async {
+            final Uri uri = Uri.parse(url);
+            _log.info('Attempting to play video: $url');
+
+            try {
+              if (await canLaunchUrl(uri)) {
+                final bool launched = await launchUrl(
+                    uri,
+                    mode: LaunchMode.externalApplication
+                );
+                if (!launched) {
+                  throw 'Failed to launch video player';
+                }
+              } else {
+                throw 'Video URL is not available';
+              }
+            } catch (e) {
+              _log.severe('Error playing video: $e');
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Unable to play the crash test video'),
+                    behavior: SnackBarBehavior.floating,
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+              }
+            }
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4.0),
+            child: Row(
+              children: [
+                const Icon(Icons.play_circle_outline, color: Colors.blue),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: const TextStyle(
+                      color: Colors.blue,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -371,6 +448,7 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
 
             // Safety Ratings
             // Safety Ratings with Images
+            // Safety Ratings
             if (vehicleInfo.safetyRatings.isNotEmpty)
               _buildInfoSection('Safety Ratings', [
                 // Rating Information
@@ -378,7 +456,8 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
                     .where((entry) =>
                 entry.value != null &&
                     entry.value.toString().isNotEmpty &&
-                    !entry.key.contains('Picture')) // Exclude picture URLs from text display
+                    !entry.key.contains('Picture') &&
+                    !entry.key.contains('Video')) // Exclude picture and video URLs from text display
                     .map((entry) => _buildInfoTile(
                     entry.key.replaceAllMapped(
                         RegExp(r'([A-Z])'),
@@ -386,6 +465,18 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
                     ).trim(),
                     entry.value.toString()
                 )).toList(),
+
+                // Video Links
+                if (vehicleInfo.safetyRatings['FrontCrashVideo'] != null)
+                  _buildVideoLink(
+                    'Watch Front Crash Test Video',
+                    vehicleInfo.safetyRatings['FrontCrashVideo'],
+                  ),
+                if (vehicleInfo.safetyRatings['SideCrashVideo'] != null)
+                  _buildVideoLink(
+                    'Watch Side Crash Test Video',
+                    vehicleInfo.safetyRatings['SideCrashVideo'],
+                  ),
 
                 // Crash Test Images
                 const SizedBox(height: 16),
