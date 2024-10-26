@@ -4,12 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
+import 'package:barcode_scan2/barcode_scan2.dart';
 import '../../services/vehicle_info_provider.dart';
 import '../../services/vin_validator.dart';
-import '../../models/app_exceptions.dart';
 import 'vehicle_variant_selection_screen.dart';
 import '../vehicle_details/vehicle_details_screen.dart';
 import 'package:logging/logging.dart';
+import 'package:flutter/services.dart' show PlatformException;
 
 class VinInputScreen extends StatefulWidget {
   const VinInputScreen({super.key});
@@ -161,7 +162,21 @@ class _VinInputScreenState extends State<VinInputScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _isLoading ? null : _scanBarcodeVin,
+                          icon: const Icon(Icons.qr_code_scanner),
+                          label: const Text('Scan Barcode'),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: ElevatedButton.icon(
                           onPressed: _isLoading ? null : _submitVin,
@@ -234,6 +249,10 @@ class _VinInputScreenState extends State<VinInputScreen> {
               text: 'Driver\'s side door jamb',
             ),
             _buildHelpItem(
+              icon: Icons.qr_code,
+              text: 'Barcode on driver\'s side door frame',
+            ),
+            _buildHelpItem(
               icon: Icons.policy,
               text: 'Insurance card or policy',
             ),
@@ -275,6 +294,97 @@ class _VinInputScreenState extends State<VinInputScreen> {
       return 'Please enter a valid VIN. Check for common mistakes:\n• Letter O vs number 0\n• Letter I vs number 1';
     }
     return null;
+  }
+
+  Future<void> _scanBarcodeVin() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+
+      var scanResult = await BarcodeScanner.scan(
+        options: ScanOptions(
+          strings: {
+            'cancel': 'Cancel',
+            'flash_on': 'Flash on',
+            'flash_off': 'Flash off',
+          },
+          restrictFormat: [BarcodeFormat.code39, BarcodeFormat.pdf417],
+          useCamera: -1, // Use back camera
+          autoEnableFlash: false,
+        ),
+      );
+
+      _log.info('Scan result type: ${scanResult.type}');
+      _log.info('Scanned barcode: ${scanResult.rawContent}');
+
+      if (scanResult.type == ResultType.Barcode && scanResult.rawContent.isNotEmpty) {
+        String scannedText = scanResult.rawContent.trim().toUpperCase();
+
+        // Method 1: First 17 characters
+        if (scannedText.length >= 17) {
+          String potentialVin = scannedText.substring(0, 17);
+          if (VinValidator.isValid(potentialVin)) {
+            setState(() {
+              _vinController.text = potentialVin;
+              _errorMessage = null;
+            });
+            return;
+          }
+        }
+
+        // Method 2: Search for VIN pattern
+        RegExp vinPattern = RegExp(r'[A-HJ-NPR-Z0-9]{17}');
+        Iterable<Match> matches = vinPattern.allMatches(scannedText);
+
+        for (Match match in matches) {
+          String potentialVin = match.group(0)!;
+          if (VinValidator.isValid(potentialVin)) {
+            setState(() {
+              _vinController.text = potentialVin;
+              _errorMessage = null;
+            });
+            return;
+          }
+        }
+
+        // If we get here, no valid VIN was found
+        String? suggestion = VinValidator.suggestCorrection(scannedText);
+        if (suggestion != null) {
+          _showCorrectionDialog(scannedText, suggestion);
+        } else {
+          _showErrorDialog(
+            'Could not extract a valid VIN from the scanned barcode.\n\n'
+                'Scanned text: $scannedText\n\n'
+                'Please try scanning again or enter the VIN manually.',
+          );
+        }
+      }
+    } on PlatformException catch (e) {
+      _log.severe('Platform error while scanning: $e');
+      if (e.code == 'PERMISSION_NOT_GRANTED') {
+        _showErrorDialog(
+          'Camera permission was denied.\n\n'
+              'Please grant camera permission in your device settings to use the scanner.',
+        );
+      } else {
+        _showErrorDialog(
+          'Error scanning barcode: ${e.message}\n'
+              'Please try again or enter the VIN manually.',
+        );
+      }
+    } catch (e) {
+      _log.severe('Error scanning VIN barcode: $e');
+      _showErrorDialog(
+        'Error scanning barcode: ${e.toString()}\n'
+            'Please try again or enter the VIN manually.',
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   Future<void> _submitVin() async {
@@ -439,9 +549,9 @@ class _VinInputScreenState extends State<VinInputScreen> {
 
   void _showCorrectionDialog(String original, String suggestion) {
     showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => AlertDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
         title: const Text('VIN Correction'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -457,15 +567,15 @@ class _VinInputScreenState extends State<VinInputScreen> {
           ],
         ),
         actions: [
-        TextButton(
-        onPressed: () {
-      Navigator.pop(context);
-      setState(() {
-        _vinController.text = original;
-      });
-        },
-          child: const Text('Use Original'),
-        ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              setState(() {
+                _vinController.text = original;
+              });
+            },
+            child: const Text('Use Original'),
+          ),
           FilledButton(
             onPressed: () {
               Navigator.pop(context);
@@ -476,7 +586,7 @@ class _VinInputScreenState extends State<VinInputScreen> {
             child: const Text('Use Suggestion'),
           ),
         ],
-        ),
+      ),
     );
   }
 

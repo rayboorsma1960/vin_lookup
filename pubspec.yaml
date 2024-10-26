@@ -14,16 +14,18 @@ dependencies:
   http: ^1.2.1  # Add this line
   cupertino_icons: ^1.0.6
   html: ^0.15.0
-  logging: ^1.0.2
-  image_picker: ^0.8.4+4
-  permission_handler: ^10.0.0
-  connectivity_plus: ^5.0.0
+  logging: ^1.2.0
+  barcode_scan2: ^4.3.3
+  image_picker: ^1.1.2
+  permission_handler: ^11.3.1
+  connectivity_plus: ^6.1.0 # Replace with the latest version or desired version
   google_mlkit_text_recognition: ^0.14.0
+  camera: ^0.11.0+2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^4.0.0
+  flutter_lints: ^5.0.0
 
 flutter:
   uses-material-design: true
