@@ -221,7 +221,7 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
               _buildInfoTile('Doors', vehicleInfo.doors.toString()),
             ]),
             const SizedBox(height: 20),
-            _buildInfoSection('Extended Information', [
+            _buildInfoSection('Manufacturing Information', [
               _buildInfoTile('Manufacturer', vehicleInfo.manufacturerName),
               _buildInfoTile('Plant City', vehicleInfo.plantCity),
               _buildInfoTile('Plant State', vehicleInfo.plantState),
@@ -233,6 +233,78 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
               _buildInfoTile('Trim', vehicleInfo.trim),
             ]),
             const SizedBox(height: 20),
+            if (_hasEngineInfo(vehicleInfo)) ...[
+              _buildInfoSection('Engine Details', [
+                if (vehicleInfo.engineConfiguration != null)
+                  _buildInfoTile('Configuration', vehicleInfo.engineConfiguration!),
+                if (vehicleInfo.engineCylinders != null)
+                  _buildInfoTile('Cylinders', vehicleInfo.engineCylinders!),
+                if (vehicleInfo.engineHP != null)
+                  _buildInfoTile('Horsepower', vehicleInfo.engineHP!),
+                if (vehicleInfo.engineModel != null)
+                  _buildInfoTile('Engine Model', vehicleInfo.engineModel!),
+                if (vehicleInfo.engineManufacturer != null)
+                  _buildInfoTile('Engine Manufacturer', vehicleInfo.engineManufacturer!),
+                if (vehicleInfo.valveTrainDesign != null)
+                  _buildInfoTile('Valve Train Design', vehicleInfo.valveTrainDesign!),
+                if (vehicleInfo.turbo != null)
+                  _buildInfoTile('Turbo', vehicleInfo.turbo!),
+              ]),
+              const SizedBox(height: 20),
+            ],
+            if (_hasEVInfo(vehicleInfo)) ...[
+              _buildInfoSection('Electric Vehicle Details', [
+                if (vehicleInfo.batteryType != null)
+                  _buildInfoTile('Battery Type', vehicleInfo.batteryType!),
+                if (vehicleInfo.batteryKWh != null)
+                  _buildInfoTile('Battery Capacity', '${vehicleInfo.batteryKWh!} kWh'),
+                if (vehicleInfo.chargerLevel != null)
+                  _buildInfoTile('Charger Level', vehicleInfo.chargerLevel!),
+                if (vehicleInfo.chargerPowerKW != null)
+                  _buildInfoTile('Charger Power', '${vehicleInfo.chargerPowerKW!} kW'),
+                if (vehicleInfo.eVDriveUnit != null)
+                  _buildInfoTile('EV Drive Unit', vehicleInfo.eVDriveUnit!),
+                if (vehicleInfo.electrificationLevel != null)
+                  _buildInfoTile('Electrification Level', vehicleInfo.electrificationLevel!),
+              ]),
+              const SizedBox(height: 20),
+            ],
+            if (_hasSafetyFeatures(vehicleInfo)) ...[
+              _buildInfoSection('Safety Features', [
+                if (vehicleInfo.adaptiveCruiseControl != null)
+                  _buildFeatureTile('Adaptive Cruise Control', vehicleInfo.adaptiveCruiseControl!),
+                if (vehicleInfo.laneDepartureWarning != null)
+                  _buildFeatureTile('Lane Departure Warning', vehicleInfo.laneDepartureWarning!),
+                if (vehicleInfo.blindSpotMon != null)
+                  _buildFeatureTile('Blind Spot Monitoring', vehicleInfo.blindSpotMon!),
+                if (vehicleInfo.forwardCollisionWarning != null)
+                  _buildFeatureTile('Forward Collision Warning', vehicleInfo.forwardCollisionWarning!),
+                if (vehicleInfo.parkAssist != null)
+                  _buildFeatureTile('Parking Assist', vehicleInfo.parkAssist!),
+                if (vehicleInfo.rearCrossTrafficAlert != null)
+                  _buildFeatureTile('Rear Cross Traffic Alert', vehicleInfo.rearCrossTrafficAlert!),
+                if (vehicleInfo.automaticPedestrianAlertingSound != null)
+                  _buildFeatureTile('Pedestrian Alert Sound', vehicleInfo.automaticPedestrianAlertingSound!),
+              ]),
+              const SizedBox(height: 20),
+            ],
+            if (_hasWeightInfo(vehicleInfo)) ...[
+              _buildInfoSection('Weight & Dimensions', [
+                if (vehicleInfo.curbWeightLB != null)
+                  _buildInfoTile('Curb Weight', '${vehicleInfo.curbWeightLB!} lbs'),
+                if (vehicleInfo.wheelBaseLong != null)
+                  _buildInfoTile('Wheelbase (Long)', vehicleInfo.wheelBaseLong!),
+                if (vehicleInfo.wheelBaseShort != null)
+                  _buildInfoTile('Wheelbase (Short)', vehicleInfo.wheelBaseShort!),
+                if (vehicleInfo.trackWidth != null)
+                  _buildInfoTile('Track Width', vehicleInfo.trackWidth!),
+                if (vehicleInfo.wheelSizeFront != null)
+                  _buildInfoTile('Front Wheel Size', vehicleInfo.wheelSizeFront!),
+                if (vehicleInfo.wheelSizeRear != null)
+                  _buildInfoTile('Rear Wheel Size', vehicleInfo.wheelSizeRear!),
+              ]),
+              const SizedBox(height: 20),
+            ],
             _buildSafetyRatingsSection(vehicleInfo.safetyRatings),
             const SizedBox(height: 20),
             _buildRecallsSection(vehicleInfo.recalls),
@@ -240,6 +312,69 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildFeatureTile(String label, String value) {
+    final bool isAvailable = !['No', 'N/A', 'null', ''].contains(value.toLowerCase());
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        children: [
+          Icon(
+            isAvailable ? Icons.check_circle : Icons.remove_circle_outline,
+            size: 20,
+            color: isAvailable ? Colors.green : Colors.grey,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: isAvailable ? Colors.black : Colors.grey,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  bool _hasEngineInfo(VehicleInfo vehicleInfo) {
+    return vehicleInfo.engineConfiguration != null ||
+        vehicleInfo.engineCylinders != null ||
+        vehicleInfo.engineHP != null ||
+        vehicleInfo.engineModel != null ||
+        vehicleInfo.engineManufacturer != null ||
+        vehicleInfo.valveTrainDesign != null ||
+        vehicleInfo.turbo != null;
+  }
+
+  bool _hasEVInfo(VehicleInfo vehicleInfo) {
+    return vehicleInfo.batteryType != null ||
+        vehicleInfo.batteryKWh != null ||
+        vehicleInfo.chargerLevel != null ||
+        vehicleInfo.chargerPowerKW != null ||
+        vehicleInfo.eVDriveUnit != null ||
+        vehicleInfo.electrificationLevel != null;
+  }
+
+  bool _hasSafetyFeatures(VehicleInfo vehicleInfo) {
+    return vehicleInfo.adaptiveCruiseControl != null ||
+        vehicleInfo.laneDepartureWarning != null ||
+        vehicleInfo.blindSpotMon != null ||
+        vehicleInfo.forwardCollisionWarning != null ||
+        vehicleInfo.parkAssist != null ||
+        vehicleInfo.rearCrossTrafficAlert != null ||
+        vehicleInfo.automaticPedestrianAlertingSound != null;
+  }
+
+  bool _hasWeightInfo(VehicleInfo vehicleInfo) {
+    return vehicleInfo.curbWeightLB != null ||
+        vehicleInfo.wheelBaseLong != null ||
+        vehicleInfo.wheelBaseShort != null ||
+        vehicleInfo.trackWidth != null ||
+        vehicleInfo.wheelSizeFront != null ||
+        vehicleInfo.wheelSizeRear != null;
   }
   // Add these methods to _VehicleDetailsScreenState
 
