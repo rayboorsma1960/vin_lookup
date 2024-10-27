@@ -33,7 +33,7 @@ class _VinInputScreenState extends State<VinInputScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Vehicle Lookup'),
+        title: const Text('VIN Lookup'),
         elevation: 0,
         actions: [
           TextButton.icon(
@@ -387,6 +387,7 @@ class _VinInputScreenState extends State<VinInputScreen> {
             setState(() {
               _vinController.text = potentialVin;
               _errorMessage = null;
+              _formKey.currentState?.validate();  // Add this line
             });
             return;
           }
@@ -515,6 +516,7 @@ class _VinInputScreenState extends State<VinInputScreen> {
             setState(() {
               _vinController.text = vin;
               _errorMessage = null;
+              _formKey.currentState?.validate();  // Add this line
             });
           } else {
             String? suggestion = VinValidator.suggestCorrection(vin);
