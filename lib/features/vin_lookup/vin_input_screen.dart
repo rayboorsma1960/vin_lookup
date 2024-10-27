@@ -174,38 +174,66 @@ class _VinInputScreenState extends State<VinInputScreen> {
                   const SizedBox(height: 24),
 
                   // Action Buttons
+                  // Action Buttons
+                  // Action Buttons
                   Row(
                     children: [
                       Expanded(
-                        child: OutlinedButton.icon(
+                        child: ElevatedButton(  // Changed from ElevatedButton.icon
                           onPressed: _isLoading ? null : _scanVin,
-                          icon: const Icon(Icons.camera_alt),
-                          label: const Text('Scan VIN'),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),  // Slightly reduced padding
+                            backgroundColor: Colors.white,
+                            foregroundColor: Colors.blue,
+                            elevation: 0,
+                            side: BorderSide(color: Colors.blue.shade300),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
+                          ),
+                          child: const Column(  // Using Column instead of icon+label
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.camera_alt),
+                              SizedBox(height: 4),  // Space between icon and text
+                              Text('Scan\nVIN',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(fontSize: 12),
+                              ),
+                            ],
                           ),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: OutlinedButton.icon(
+                        child: ElevatedButton(  // Changed from ElevatedButton.icon
                           onPressed: _isLoading ? null : _scanBarcodeVin,
-                          icon: const Icon(Icons.qr_code_scanner),
-                          label: const Text('Scan Barcode'),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),  // Slightly reduced padding
+                            backgroundColor: Colors.white,
+                            foregroundColor: Colors.blue,
+                            elevation: 0,
+                            side: BorderSide(color: Colors.blue.shade300),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
+                          ),
+                          child: const Column(  // Using Column instead of icon+label
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.qr_code_scanner),
+                              SizedBox(height: 4),  // Space between icon and text
+                              Text('Scan\nBarcode',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(fontSize: 12),
+                              ),
+                            ],
                           ),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: ElevatedButton.icon(
+                        child: ElevatedButton.icon(  // Keep this one as ElevatedButton.icon
                           onPressed: _isLoading ? null : _submitVin,
                           icon: _isLoading
                               ? const SizedBox(
@@ -220,6 +248,9 @@ class _VinInputScreenState extends State<VinInputScreen> {
                           label: Text(_isLoading ? 'Searching...' : 'Look Up'),
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
+                            backgroundColor: Colors.blue,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
