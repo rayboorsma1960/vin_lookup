@@ -45,13 +45,19 @@ class _VinInputScreenState extends State<VinInputScreen> {
                 ),
               );
             },
-            icon: const Icon(Icons.feedback, color: Colors.white),
+            icon: const Icon(Icons.feedback, color: Colors.red),
             label: const Text(
               'Feedback',
               style: TextStyle(
-                color: Colors.white,
+                color: Colors.red,
                 fontSize: 14,
+                fontWeight: FontWeight.bold,  // Optional: makes the text bolder
               ),
+            ),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              foregroundColor: Colors.red,
+              backgroundColor: Colors.red.withOpacity(0.1),  // Optional: adds a light red background
             ),
           ),
         ],
