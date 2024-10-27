@@ -10,6 +10,64 @@ import '../../models/app_exceptions.dart';
 import 'package:logging/logging.dart';
 import 'package:http/http.dart' as http;  // Add this line
 
+// Add the StarRating widget here, BEFORE the VehicleDetailsScreen class:
+class StarRating extends StatelessWidget {
+  final dynamic rating;
+  final double size;
+  final Color filledColor;
+  final Color unfilledColor;
+
+  const StarRating({
+    super.key,
+    required this.rating,
+    this.size = 18.0,
+    this.filledColor = Colors.amber,
+    this.unfilledColor = Colors.grey,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (rating == null || rating.toString().toLowerCase() == 'not rated') {
+      return Text(
+        'Not Rated',
+        style: TextStyle(
+          fontSize: size,
+          color: Colors.grey[600],
+        ),
+      );
+    }
+
+    final numericRating = double.tryParse(rating.toString()) ?? 0;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(5, (index) {
+        if (index < numericRating) {
+          return Icon(
+            Icons.star,
+            size: size,
+            color: filledColor,
+          );
+        } else if (index == numericRating.floor() &&
+            numericRating % 1 != 0) {
+          return Icon(
+            Icons.star_half,
+            size: size,
+            color: filledColor,
+          );
+        } else {
+          return Icon(
+            Icons.star_border,
+            size: size,
+            color: unfilledColor,
+          );
+        }
+      }),
+    );
+  }
+}
+
+
 class VehicleDetailsScreen extends StatefulWidget {
   const VehicleDetailsScreen({super.key});
 
@@ -107,6 +165,10 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
       return const SizedBox.shrink();
     }
 
+    // Check if this is a safety rating field
+    final bool isSafetyRating = label.toLowerCase().contains('rating') ||
+        label.toLowerCase().contains('crash');
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
@@ -118,12 +180,15 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
           ),
           Expanded(
             flex: 3,
-            child: Text(value),
+            child: isSafetyRating
+                ? StarRating(rating: value)
+                : Text(value),
           ),
         ],
       ),
     );
   }
+
 
   Future<bool> _isVideoAvailable(String url) async {
     try {
