@@ -2,64 +2,52 @@
 
 abstract class AppException implements Exception {
   final String message;
-  final String? code;
   final dynamic originalError;
 
-  AppException(this.message, {this.code, this.originalError});
+  AppException(this.message, {this.originalError});
 
   @override
-  String toString() => 'AppException: $message${code != null ? ' (Code: $code)' : ''}';
+  String toString() => 'AppException: $message${originalError != null ? ' ($originalError)' : ''}';
 }
 
 class NetworkException extends AppException {
+  final bool isConnectivityError;
+  final bool isServerError;
   final int? statusCode;
+  final String? code;
 
-  NetworkException(super.message, {
-    this.statusCode,
-    super.code,
-    super.originalError,
-  });
-
-  bool get isServerError => statusCode != null && statusCode! >= 500;
-  bool get isClientError => statusCode != null && statusCode! >= 400 && statusCode! < 500;
-  bool get isConnectivityError => statusCode == null;
+  NetworkException(
+      String message, {
+        this.isConnectivityError = false,
+        this.isServerError = false,
+        this.statusCode,
+        this.code,
+        dynamic originalError,
+      }) : super(message, originalError: originalError);
 }
 
 class DataParsingException extends AppException {
-  final String? expectedType;
-  final String? receivedData;
-
-  DataParsingException(super.message, {
-    this.expectedType,
-    this.receivedData,
-    super.code,
-    super.originalError,
-  });
-}
-
-class ValidationException extends AppException {
-  final Map<String, String>? fieldErrors;
-
-  ValidationException(super.message, {
-    this.fieldErrors,
-    super.code,
-    super.originalError,
-  });
+  DataParsingException(String message, {dynamic originalError})
+      : super(message, originalError: originalError);
 }
 
 class ResourceNotFoundException extends AppException {
-  ResourceNotFoundException(super.message, {
-    super.code,
-    super.originalError,
-  });
+  final String code;
+
+  ResourceNotFoundException(String message, {required this.code, dynamic originalError})
+      : super(message, originalError: originalError);
+}
+
+class ValidationException extends AppException {
+  final String code;
+
+  ValidationException(String message, {required this.code, dynamic originalError})
+      : super(message, originalError: originalError);
 }
 
 class VehicleInfoException extends AppException {
   final String? vin;
 
-  VehicleInfoException(super.message, {
-    this.vin,
-    super.code,
-    super.originalError,
-  });
+  VehicleInfoException(String message, {this.vin, dynamic originalError})
+      : super(message, originalError: originalError);
 }

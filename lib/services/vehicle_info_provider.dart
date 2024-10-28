@@ -26,11 +26,22 @@ class VehicleInfoProvider with ChangeNotifier {
   AppException? get error => _error;
 
   // Helper method to get user-friendly error message
+  // In VehicleInfoProvider class
+
   String getUserFriendlyError() {
     if (_error == null) return '';
 
     if (_error is NetworkException) {
       final networkError = _error as NetworkException;
+
+      // Specifically check for 503 status code
+      if (networkError.statusCode == 503) {
+        return 'The NHTSA vehicle information service is temporarily unavailable.\n\n'
+            'This is a known issue with the government database service, not with your device '
+            'or internet connection.\n\n'
+            'Please try again in a few minutes.';
+      }
+
       if (networkError.isConnectivityError) {
         return 'Please check your internet connection and try again.';
       } else if (networkError.isServerError) {
@@ -43,6 +54,16 @@ class VehicleInfoProvider with ChangeNotifier {
     } else if (_error is ValidationException) {
       return 'Invalid vehicle data received. Please try again.';
     } else if (_error is VehicleInfoException) {
+      // Also check VehicleInfoException's originalError for NetworkException with 503
+      if (_error!.originalError is NetworkException) {
+        final networkError = _error!.originalError as NetworkException;
+        if (networkError.statusCode == 503) {
+          return 'The NHTSA vehicle information service is temporarily unavailable.\n\n'
+              'This is a known issue with the government database service, not with your device '
+              'or internet connection.\n\n'
+              'Please try again in a few minutes.';
+        }
+      }
       return 'Error retrieving vehicle information. Please try again.';
     }
 

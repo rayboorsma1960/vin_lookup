@@ -460,10 +460,41 @@ class _VinInputScreenState extends State<VinInputScreen> {
         if (!mounted) return;
 
         if (provider.error != null) {
+          String errorMessage;
+
+          if (provider.error!.message.contains('503')) {
+            errorMessage = 'The NHTSA vehicle information service is temporarily unavailable.\n\n'
+                'This is a known issue with the government database service, not with your device '
+                'or internet connection.\n\n'
+                'Please try again in a few minutes.';
+          } else if (provider.error!.message.contains('timeout')) {
+            errorMessage = 'The request timed out. Please check your internet connection and try again.';
+          } else {
+            errorMessage = provider.getUserFriendlyError();
+          }
+
           setState(() {
-            _errorMessage = provider.getUserFriendlyError();
+            _errorMessage = errorMessage;
           });
+
+          // Show a snackbar for service outage
+          if (provider.error!.message.contains('503') && mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Service temporarily down. Please try again later.'),
+                duration: Duration(seconds: 5),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
         } else if (provider.vehicleInfo != null) {
+          // Clear any existing error messages
+          setState(() {
+            _errorMessage = null;
+          });
+
+          if (!mounted) return;
+
           if (provider.vehicleVariants.isNotEmpty) {
             Navigator.push(
               context,
@@ -479,6 +510,13 @@ class _VinInputScreenState extends State<VinInputScreen> {
               ),
             );
           }
+        }
+      } catch (e) {
+        _log.severe('Unexpected error in _submitVin: $e');
+        if (mounted) {
+          setState(() {
+            _errorMessage = 'An unexpected error occurred. Please try again.';
+          });
         }
       } finally {
         if (mounted) {

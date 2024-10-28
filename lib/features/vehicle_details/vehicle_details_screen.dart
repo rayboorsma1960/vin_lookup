@@ -883,29 +883,92 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
   }
 
   Widget _buildErrorState(VehicleInfoProvider provider) {
+    String errorMessage;
+    IconData errorIcon;
+    Color errorColor;
+
+    // Check for NetworkException first
+    if (provider.error is NetworkException) {
+      final networkError = provider.error as NetworkException;
+      if (networkError.statusCode == 503) {
+        errorMessage = 'The NHTSA vehicle information service is currently down. '
+            'This is a temporary issue with the government database service, '
+            'not with your app or internet connection.\n\n'
+            'Please try again later.';
+        errorIcon = Icons.cloud_off;
+        errorColor = Colors.orange;
+      } else if (networkError.isConnectivityError) {
+        errorMessage = 'Please check your internet connection and try again.';
+        errorIcon = Icons.signal_wifi_off;
+        errorColor = Colors.red;
+      } else if (networkError.isServerError) {
+        errorMessage = 'Service is temporarily unavailable. Please try again later.';
+        errorIcon = Icons.cloud_off;
+        errorColor = Colors.orange;
+      } else {
+        errorMessage = networkError.message;
+        errorIcon = Icons.error_outline;
+        errorColor = Colors.red;
+      }
+    } else {
+      errorMessage = provider.getUserFriendlyError();
+      errorIcon = Icons.error_outline;
+      errorColor = Colors.red;
+    }
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.error_outline,
-              size: 64,
-              color: Colors.red,
+        child: Card(
+          elevation: 2,
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  errorIcon,
+                  size: 64,
+                  color: errorColor,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  errorMessage,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ElevatedButton(
+                      onPressed: _handleRefresh,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: errorColor,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.refresh, size: 20),
+                          SizedBox(width: 8),
+                          Text('Try Again'),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            Text(
-              provider.error?.message ?? 'An error occurred',
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _handleRefresh,
-              child: const Text('Try Again'),
-            ),
-          ],
+          ),
         ),
       ),
     );
