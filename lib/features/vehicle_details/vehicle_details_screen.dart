@@ -887,26 +887,26 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
     IconData errorIcon;
     Color errorColor;
 
-    // Check for NetworkException first
     if (provider.error is NetworkException) {
       final networkError = provider.error as NetworkException;
-      if (networkError.statusCode == 503) {
+      if (networkError.isConnectivityError) {
+        errorMessage = 'Unable to connect to the vehicle information service.\n\n'
+            'Please check your internet connection and try again.';
+        errorIcon = Icons.signal_wifi_off;
+        errorColor = Colors.red;
+      } else if (networkError.statusCode == 503) {
         errorMessage = 'The NHTSA vehicle information service is currently down. '
             'This is a temporary issue with the government database service, '
             'not with your app or internet connection.\n\n'
             'Please try again later.';
         errorIcon = Icons.cloud_off;
         errorColor = Colors.orange;
-      } else if (networkError.isConnectivityError) {
-        errorMessage = 'Please check your internet connection and try again.';
-        errorIcon = Icons.signal_wifi_off;
-        errorColor = Colors.red;
       } else if (networkError.isServerError) {
         errorMessage = 'Service is temporarily unavailable. Please try again later.';
         errorIcon = Icons.cloud_off;
         errorColor = Colors.orange;
       } else {
-        errorMessage = networkError.message;
+        errorMessage = 'Unable to process your request. Please try again.';
         errorIcon = Icons.error_outline;
         errorColor = Colors.red;
       }
@@ -925,7 +925,6 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
             padding: const EdgeInsets.all(20.0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
                   errorIcon,

@@ -15,10 +15,21 @@ class NHTSAApiService {
       final basicInfo = await _getExtendedInfo(vin);
       final recalls = await getRecalls(basicInfo.make, basicInfo.model, basicInfo.year.toString());
       return basicInfo.copyWith(recalls: recalls);
+    } on NetworkException catch (e) {
+      _log.severe('Network error in getVehicleInfo: $e');
+      rethrow;
     } on AppException {
       rethrow;
     } catch (e) {
       _log.severe('Error in getVehicleInfo: $e');
+      if (e.toString().contains('SocketException') ||
+          e.toString().contains('Failed host lookup')) {
+        throw NetworkException(
+          'Unable to connect to the vehicle information service. Please check your internet connection.',
+          isConnectivityError: true,
+          originalError: e,
+        );
+      }
       throw VehicleInfoException(
         'Failed to retrieve vehicle information',
         vin: vin,
@@ -26,7 +37,6 @@ class NHTSAApiService {
       );
     }
   }
-
   Future<VehicleInfo> _getExtendedInfo(String vin) async {
     try {
       final response = await http.get(Uri.parse('${baseUrl}DecodeVinValuesExtended/$vin?format=json'));
@@ -35,155 +45,177 @@ class NHTSAApiService {
         switch (response.statusCode) {
           case 503:
             throw NetworkException(
-              'The NHTSA service is temporarily unavailable (503)',
+              'The NHTSA vehicle information service is temporarily unavailable.',
               isServerError: true,
               statusCode: 503,
             );
           case 404:
             throw ResourceNotFoundException(
-              'Vehicle information not found',
+              'Vehicle information not found. Please verify the VIN and try again.',
               code: 'VIN_NOT_FOUND',
             );
           case 400:
             throw ValidationException(
-              'Invalid VIN format or request',
+              'Invalid VIN format. Please check the VIN and try again.',
               code: 'INVALID_VIN',
             );
           default:
             throw NetworkException(
-              'Failed to load vehicle information (${response.statusCode})',
+              'The vehicle information service returned an unexpected response.',
               isServerError: true,
               statusCode: response.statusCode,
             );
         }
       }
 
-      final decodedResponse = json.decode(response.body);
-      final results = decodedResponse['Results'][0] as Map<String, dynamic>;
+      try {
+        final decodedResponse = json.decode(response.body);
+        final results = decodedResponse['Results']?[0] as Map<String, dynamic>?;
 
-      _log.info('Decoded VIN response: $results');
+        if (results == null) {
+          throw ValidationException(
+            'Invalid response from the vehicle information service.',
+            code: 'INVALID_RESPONSE',
+          );
+        }
 
-      return VehicleInfo(
-        // Basic Vehicle Identification
-        vin: vin,
-        make: results['Make'] ?? 'N/A',
-        makeId: results['MakeID'] ?? 'N/A',
-        model: results['Model'] ?? 'N/A',
-        modelId: results['ModelID'] ?? 'N/A',
-        year: int.tryParse(results['ModelYear'] ?? '') ?? 0,
-        manufacturerId: results['ManufacturerId'] ?? 'N/A',
-        manufacturerName: results['Manufacturer'] ?? 'N/A',
-        vehicleDescriptor: results['VehicleDescriptor'] ?? 'N/A',
+        _log.info('Decoded VIN response successfully');
 
-        // Vehicle Classification
-        vehicleType: results['VehicleType'] ?? 'N/A',
-        bodyClass: results['BodyClass'] ?? 'N/A',
-        series: results['Series'] ?? 'N/A',
-        series2: results['Series2'] ?? 'N/A',
-        trim: results['Trim'] ?? 'N/A',
-        trim2: results['Trim2'] ?? 'N/A',
+        return VehicleInfo(
+          // Basic Vehicle Identification
+          vin: vin,
+          make: results['Make'] ?? 'N/A',
+          makeId: results['MakeID'] ?? 'N/A',
+          model: results['Model'] ?? 'N/A',
+          modelId: results['ModelID'] ?? 'N/A',
+          year: int.tryParse(results['ModelYear'] ?? '') ?? 0,
+          manufacturerId: results['ManufacturerId'] ?? 'N/A',
+          manufacturerName: results['Manufacturer'] ?? 'N/A',
+          vehicleDescriptor: results['VehicleDescriptor'] ?? 'N/A',
 
-        // Engine Information
-        engineConfiguration: results['EngineConfiguration'] ?? 'N/A',
-        engineCylinders: results['EngineCylinders'] ?? 'N/A',
-        engineModel: results['EngineModel'] ?? 'N/A',
-        engineManufacturer: results['EngineManufacturer'] ?? 'N/A',
-        engineDisplacementCC: results['DisplacementCC'] ?? 'N/A',
-        engineDisplacementCI: results['DisplacementCI'] ?? 'N/A',
-        engineDisplacementL: results['DisplacementL'] ?? 'N/A',
-        engineHP: results['EngineHP'] ?? 'N/A',
-        engineKW: results['EngineKW'] ?? 'N/A',
-        engineCycles: results['EngineCycles'] ?? 'N/A',
-        fuelInjectionType: results['FuelInjectionType'] ?? 'N/A',
-        fuelTypePrimary: results['FuelTypePrimary'] ?? 'N/A',
-        fuelTypeSecondary: results['FuelTypeSecondary'] ?? 'N/A',
-        otherEngineInfo: results['OtherEngineInfo'] ?? 'N/A',
-        turbo: results['Turbo'] ?? 'N/A',
+          // Vehicle Classification
+          vehicleType: results['VehicleType'] ?? 'N/A',
+          bodyClass: results['BodyClass'] ?? 'N/A',
+          series: results['Series'] ?? 'N/A',
+          series2: results['Series2'] ?? 'N/A',
+          trim: results['Trim'] ?? 'N/A',
+          trim2: results['Trim2'] ?? 'N/A',
 
-        // Transmission & Drive
-        driveType: results['DriveType'] ?? 'N/A',
-        transmissionStyle: results['TransmissionStyle'] ?? 'N/A',
-        transmissionSpeeds: results['TransmissionSpeeds'] ?? 'N/A',
+          // Engine Information
+          engineConfiguration: results['EngineConfiguration'] ?? 'N/A',
+          engineCylinders: results['EngineCylinders'] ?? 'N/A',
+          engineModel: results['EngineModel'] ?? 'N/A',
+          engineManufacturer: results['EngineManufacturer'] ?? 'N/A',
+          engineDisplacementCC: results['DisplacementCC'] ?? 'N/A',
+          engineDisplacementCI: results['DisplacementCI'] ?? 'N/A',
+          engineDisplacementL: results['DisplacementL'] ?? 'N/A',
+          engineHP: results['EngineHP'] ?? 'N/A',
+          engineKW: results['EngineKW'] ?? 'N/A',
+          engineCycles: results['EngineCycles'] ?? 'N/A',
+          fuelInjectionType: results['FuelInjectionType'] ?? 'N/A',
+          fuelTypePrimary: results['FuelTypePrimary'] ?? 'N/A',
+          fuelTypeSecondary: results['FuelTypeSecondary'] ?? 'N/A',
+          otherEngineInfo: results['OtherEngineInfo'] ?? 'N/A',
+          turbo: results['Turbo'] ?? 'N/A',
 
-        // Dimensions & Weight
-        doors: int.tryParse(results['Doors'] ?? '') ?? 0,
-        wheelBaseType: results['WheelBaseType'] ?? 'N/A',
-        wheelBaseShort: results['WheelBaseShort'] ?? 'N/A',
-        wheelBaseLong: results['WheelBaseLong'] ?? 'N/A',
-        trackWidth: results['TrackWidth'] ?? 'N/A',
-        wheelSizeFront: results['WheelSizeFront'] ?? 'N/A',
-        wheelSizeRear: results['WheelSizeRear'] ?? 'N/A',
-        curbWeightLB: results['CurbWeightLB'] ?? 'N/A',
-        gvwr: results['GVWR'] ?? 'N/A',
-        gcwr: results['GCWR'] ?? 'N/A',
-        gcwrTo: results['GCWR_to'] ?? 'N/A',
-        gvwrTo: results['GVWR_to'] ?? 'N/A',
-        bedLengthIN: results['BedLengthIN'] ?? 'N/A',
-        bedType: results['BedType'] ?? 'N/A',
-        bodyCabType: results['BodyCabType'] ?? 'N/A',
+          // Transmission & Drive
+          driveType: results['DriveType'] ?? 'N/A',
+          transmissionStyle: results['TransmissionStyle'] ?? 'N/A',
+          transmissionSpeeds: results['TransmissionSpeeds'] ?? 'N/A',
 
-        // Plant Information
-        plantCity: results['PlantCity'] ?? 'N/A',
-        plantState: results['PlantState'] ?? 'N/A',
-        plantCountry: results['PlantCountry'] ?? 'N/A',
-        plantCompanyName: results['PlantCompanyName'] ?? 'N/A',
+          // Dimensions & Weight
+          doors: int.tryParse(results['Doors'] ?? '') ?? 0,
+          wheelBaseType: results['WheelBaseType'] ?? 'N/A',
+          wheelBaseShort: results['WheelBaseShort'] ?? 'N/A',
+          wheelBaseLong: results['WheelBaseLong'] ?? 'N/A',
+          trackWidth: results['TrackWidth'] ?? 'N/A',
+          wheelSizeFront: results['WheelSizeFront'] ?? 'N/A',
+          wheelSizeRear: results['WheelSizeRear'] ?? 'N/A',
+          curbWeightLB: results['CurbWeightLB'] ?? 'N/A',
+          gvwr: results['GVWR'] ?? 'N/A',
+          gcwr: results['GCWR'] ?? 'N/A',
+          gcwrTo: results['GCWR_to'] ?? 'N/A',
+          gvwrTo: results['GVWR_to'] ?? 'N/A',
+          bedLengthIN: results['BedLengthIN'] ?? 'N/A',
+          bedType: results['BedType'] ?? 'N/A',
+          bodyCabType: results['BodyCabType'] ?? 'N/A',
 
-        // Safety Features
-        abs: results['ABS'] ?? 'N/A',
-        traction: results['TractionControl'] ?? 'N/A',
-        esc: results['ESC'] ?? 'N/A',
-        brakeSystemType: results['BrakeSystemType'] ?? 'N/A',
-        brakeSystemDesc: results['BrakeSystemDesc'] ?? 'N/A',
-        activeSafetySysNote: results['ActiveSafetySysNote'] ?? 'N/A',
-        adaptiveCruiseControl: results['AdaptiveCruiseControl'] ?? 'N/A',
-        adaptiveHeadlights: results['AdaptiveHeadlights'] ?? 'N/A',
-        adaptiveDrivingBeam: results['AdaptiveDrivingBeam'] ?? 'N/A',
-        blindSpotMon: results['BlindSpotMon'] ?? 'N/A',
-        blindSpotIntervention: results['BlindSpotIntervention'] ?? 'N/A',
-        laneDepartureWarning: results['LaneDepartureWarning'] ?? 'N/A',
-        laneKeepSystem: results['LaneKeepSystem'] ?? 'N/A',
-        laneCenteringAssistance: results['LaneCenteringAssistance'] ?? 'N/A',
-        forwardCollisionWarning: results['ForwardCollisionWarning'] ?? 'N/A',
-        automaticEmergencyBraking: results['RearAutomaticEmergencyBraking'] ?? 'N/A',
-        rearCrossTrafficAlert: results['RearCrossTrafficAlert'] ?? 'N/A',
-        rearVisibilitySystem: results['RearVisibilitySystem'] ?? 'N/A',
-        parkAssist: results['ParkAssist'] ?? 'N/A',
-        tpms: results['TPMS'] ?? 'N/A',
+          // Plant Information
+          plantCity: results['PlantCity'] ?? 'N/A',
+          plantState: results['PlantState'] ?? 'N/A',
+          plantCountry: results['PlantCountry'] ?? 'N/A',
+          plantCompanyName: results['PlantCompanyName'] ?? 'N/A',
 
-        // Additional Safety Equipment
-        airBagLocCurtain: results['AirBagLocCurtain'] ?? 'N/A',
-        airBagLocFront: results['AirBagLocFront'] ?? 'N/A',
-        airBagLocKnee: results['AirBagLocKnee'] ?? 'N/A',
-        airBagLocSeatCushion: results['AirBagLocSeatCushion'] ?? 'N/A',
-        airBagLocSide: results['AirBagLocSide'] ?? 'N/A',
-        pretensioner: results['Pretensioner'] ?? 'N/A',
-        seatBeltsAll: results['SeatBeltsAll'] ?? 'N/A',
+          // Safety Features
+          abs: results['ABS'] ?? 'N/A',
+          traction: results['TractionControl'] ?? 'N/A',
+          esc: results['ESC'] ?? 'N/A',
+          brakeSystemType: results['BrakeSystemType'] ?? 'N/A',
+          brakeSystemDesc: results['BrakeSystemDesc'] ?? 'N/A',
+          activeSafetySysNote: results['ActiveSafetySysNote'] ?? 'N/A',
+          adaptiveCruiseControl: results['AdaptiveCruiseControl'] ?? 'N/A',
+          adaptiveHeadlights: results['AdaptiveHeadlights'] ?? 'N/A',
+          adaptiveDrivingBeam: results['AdaptiveDrivingBeam'] ?? 'N/A',
+          blindSpotMon: results['BlindSpotMon'] ?? 'N/A',
+          blindSpotIntervention: results['BlindSpotIntervention'] ?? 'N/A',
+          laneDepartureWarning: results['LaneDepartureWarning'] ?? 'N/A',
+          laneKeepSystem: results['LaneKeepSystem'] ?? 'N/A',
+          laneCenteringAssistance: results['LaneCenteringAssistance'] ?? 'N/A',
+          forwardCollisionWarning: results['ForwardCollisionWarning'] ?? 'N/A',
+          automaticEmergencyBraking: results['RearAutomaticEmergencyBraking'] ?? 'N/A',
+          rearCrossTrafficAlert: results['RearCrossTrafficAlert'] ?? 'N/A',
+          rearVisibilitySystem: results['RearVisibilitySystem'] ?? 'N/A',
+          parkAssist: results['ParkAssist'] ?? 'N/A',
+          tpms: results['TPMS'] ?? 'N/A',
 
-        // Lighting
-        daytimeRunningLight: results['DaytimeRunningLight'] ?? 'N/A',
-        headlampLightSource: results['LowerBeamHeadlampLightSource'] ?? 'N/A',
-        semiautomaticHeadlampBeamSwitching: results['SemiautomaticHeadlampBeamSwitching'] ?? 'N/A',
+          // Additional Safety Equipment
+          airBagLocCurtain: results['AirBagLocCurtain'] ?? 'N/A',
+          airBagLocFront: results['AirBagLocFront'] ?? 'N/A',
+          airBagLocKnee: results['AirBagLocKnee'] ?? 'N/A',
+          airBagLocSeatCushion: results['AirBagLocSeatCushion'] ?? 'N/A',
+          airBagLocSide: results['AirBagLocSide'] ?? 'N/A',
+          pretensioner: results['Pretensioner'] ?? 'N/A',
+          seatBeltsAll: results['SeatBeltsAll'] ?? 'N/A',
 
-        // Price & Market
-        basePrice: results['BasePrice'] ?? 'N/A',
-        destinationMarket: results['DestinationMarket'] ?? 'N/A',
+          // Lighting
+          daytimeRunningLight: results['DaytimeRunningLight'] ?? 'N/A',
+          headlampLightSource: results['LowerBeamHeadlampLightSource'] ?? 'N/A',
+          semiautomaticHeadlampBeamSwitching: results['SemiautomaticHeadlampBeamSwitching'] ?? 'N/A',
 
-        // Additional Features
-        entertainmentSystem: results['EntertainmentSystem'] ?? 'N/A',
-        keylessIgnition: results['KeylessIgnition'] ?? 'N/A',
-        saeAutomationLevel: results['SAEAutomationLevel'] ?? 'N/A',
+          // Price & Market
+          basePrice: results['BasePrice'] ?? 'N/A',
+          destinationMarket: results['DestinationMarket'] ?? 'N/A',
 
-        // API Related
-        imageUrl: '',
-        recalls: [],
-        safetyRatings: {},
-        complaints: [],
-      );
-    } on NetworkException catch (e) {
-      _log.severe('Network error in _getExtendedInfo: $e');
-      rethrow;
+          // Additional Features
+          entertainmentSystem: results['EntertainmentSystem'] ?? 'N/A',
+          keylessIgnition: results['KeylessIgnition'] ?? 'N/A',
+          saeAutomationLevel: results['SAEAutomationLevel'] ?? 'N/A',
+
+          // API Related
+          imageUrl: '',
+          recalls: [],
+          safetyRatings: {},
+          complaints: [],
+        );
+      } on FormatException catch (e) {
+        throw ValidationException(
+          'Unable to process the vehicle information response.',
+          code: 'INVALID_FORMAT',
+          originalError: e,
+        );
+      }
     } catch (e) {
       _log.severe('Error in _getExtendedInfo: $e');
+      if (e.toString().contains('SocketException') ||
+          e.toString().contains('Failed host lookup')) {
+        throw NetworkException(
+          'Unable to connect to the vehicle information service. Please check your internet connection.',
+          isConnectivityError: true,
+          originalError: e,
+        );
+      } else if (e is NetworkException || e is ValidationException || e is ResourceNotFoundException) {
+        rethrow;
+      }
       throw VehicleInfoException(
         'Failed to process vehicle information',
         vin: vin,
@@ -191,7 +223,6 @@ class NHTSAApiService {
       );
     }
   }
-
   Future<List<Map<String, dynamic>>> getRecalls(String make, String model, String year) async {
     try {
       final encodedMake = Uri.encodeComponent(make);
@@ -207,22 +238,31 @@ class NHTSAApiService {
       }
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        _log.info('Recalls API response: $data');
+        try {
+          final data = json.decode(response.body);
+          _log.info('Recalls API response: $data');
 
-        if (data['Count'] > 0 && data['results'] is List) {
-          final recalls = (data['results'] as List).cast<Map<String, dynamic>>();
-          _log.info('Found ${recalls.length} recalls for $year $make $model');
-          return recalls;
+          if (data['Count'] > 0 && data['results'] is List) {
+            final recalls = (data['results'] as List).cast<Map<String, dynamic>>();
+            _log.info('Found ${recalls.length} recalls for $year $make $model');
+            return recalls;
+          }
+          _log.info('No recalls found for $year $make $model');
+        } on FormatException catch (e) {
+          _log.warning('Error parsing recalls response: $e');
         }
-        _log.info('No recalls found for $year $make $model');
       }
 
       _log.warning('Failed to fetch recalls. Status code: ${response.statusCode}');
       return [];
     } catch (e) {
-      _log.severe('Error fetching recalls: $e');
-      return [];
+      if (e.toString().contains('SocketException') ||
+          e.toString().contains('Failed host lookup')) {
+        _log.warning('Network connectivity issue while fetching recalls: $e');
+      } else {
+        _log.severe('Error fetching recalls: $e');
+      }
+      return [];  // Return empty list for recalls errors to not block main flow
     }
   }
 
@@ -242,23 +282,31 @@ class NHTSAApiService {
       }
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        _log.info('Vehicle variants API response: $data');
+        try {
+          final data = json.decode(response.body);
+          _log.info('Vehicle variants API response: $data');
 
-        if (data['Count'] > 0 && data['Results'] is List) {
-          _log.info('Found ${data['Count']} vehicle variants');
-          return List<Map<String, dynamic>>.from(data['Results']);
+          if (data['Count'] > 0 && data['Results'] is List) {
+            _log.info('Found ${data['Count']} vehicle variants');
+            return List<Map<String, dynamic>>.from(data['Results']);
+          }
+        } on FormatException catch (e) {
+          _log.warning('Error parsing vehicle variants response: $e');
         }
       }
 
       _log.warning('No vehicle variants found for $year $make $model');
       return [];
     } catch (e) {
-      _log.severe('Error fetching vehicle variants: $e');
-      return [];
+      if (e.toString().contains('SocketException') ||
+          e.toString().contains('Failed host lookup')) {
+        _log.warning('Network connectivity issue while fetching variants: $e');
+      } else {
+        _log.severe('Error fetching vehicle variants: $e');
+      }
+      return [];  // Return empty list for variants errors to not block main flow
     }
   }
-
   Future<Map<String, dynamic>> getSafetyRatings(String vehicleId) async {
     try {
       final url = '$safetyRatingsUrl/VehicleId/$vehicleId?format=json';
@@ -272,18 +320,27 @@ class NHTSAApiService {
       }
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['Count'] > 0 && data['Results'] is List && data['Results'].isNotEmpty) {
-          _log.info('Found safety ratings for vehicle ID: $vehicleId');
-          return data['Results'][0];
+        try {
+          final data = json.decode(response.body);
+          if (data['Count'] > 0 && data['Results'] is List && data['Results'].isNotEmpty) {
+            _log.info('Found safety ratings for vehicle ID: $vehicleId');
+            return data['Results'][0];
+          }
+        } on FormatException catch (e) {
+          _log.warning('Error parsing safety ratings response: $e');
         }
       }
 
       _log.warning('No safety ratings found for vehicle ID: $vehicleId');
       return {};
     } catch (e) {
-      _log.severe('Error fetching safety ratings: $e');
-      return {};
+      if (e.toString().contains('SocketException') ||
+          e.toString().contains('Failed host lookup')) {
+        _log.warning('Network connectivity issue while fetching safety ratings: $e');
+      } else {
+        _log.severe('Error fetching safety ratings: $e');
+      }
+      return {};  // Return empty map for safety ratings errors to not block main flow
     }
   }
 }
