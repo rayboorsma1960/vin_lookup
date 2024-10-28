@@ -526,13 +526,19 @@ class _VinInputScreenState extends State<VinInputScreen> {
     }
   }
 
+  // In the _scanVin method of VinInputScreen:
+
   Future<void> _scanVin() async {
+    _log.info('=== Starting VIN scan process ===');
+
     try {
+      _log.info('Setting initial state (isLoading: true, errorMessage: null)');
       setState(() {
         _isLoading = true;
         _errorMessage = null;
       });
 
+      _log.info('Launching camera picker...');
       final XFile? image = await _picker.pickImage(
         source: ImageSource.camera,
         imageQuality: 100,
@@ -540,108 +546,163 @@ class _VinInputScreenState extends State<VinInputScreen> {
         maxHeight: 2000,
       );
 
-      if (image != null) {
-        final inputImage = InputImage.fromFilePath(image.path);
-        final RecognizedText recognizedText = await _textRecognizer.processImage(inputImage);
-
-        _log.info('Recognized text: ${recognizedText.text}');
-
-        String text = recognizedText.text;
-        String? vin = _extractVin(text);
-
-        if (vin != null) {
-          if (VinValidator.isValid(vin)) {
-            setState(() {
-              _vinController.text = vin;
-              _errorMessage = null;
-              _formKey.currentState?.validate();  // Add this line
-            });
-          } else {
-            String? suggestion = VinValidator.suggestCorrection(vin);
-            if (suggestion != null) {
-              _showCorrectionDialog(vin, suggestion);
-            } else {
-              _showErrorDialog(
-                'Could not validate the detected VIN: $vin\n\n'
-                    'Please try scanning again or enter the VIN manually.',
-              );
-            }
-          }
-        } else {
-          _showErrorDialog(
-            'No valid VIN pattern found.\n\n'
-                'Recognized text:\n${recognizedText.text}\n\n'
-                'Please try scanning again or enter the VIN manually.',
-          );
-        }
+      if (image == null) {
+        _log.info('Camera picker returned null - user likely cancelled');
+        return;
       }
-    } catch (e) {
-      _log.severe('Error scanning VIN: $e');
-      _showErrorDialog(
-        'Error scanning VIN: ${e.toString()}\n'
-            'Please try again or enter the VIN manually.',
-      );
+
+      _log.info('Image captured successfully: ${image.path}');
+
+      if (!mounted) {
+        _log.warning('Widget not mounted after image capture');
+        return;
+      }
+
+      _log.info('Converting image to InputImage format');
+      final inputImage = InputImage.fromFilePath(image.path);
+
+      _log.info('Starting text recognition process');
+      final RecognizedText recognizedText = await _textRecognizer.processImage(inputImage);
+      _log.info('Text recognition completed. Found ${recognizedText.blocks.length} blocks of text');
+      _log.info('Full recognized text:\n${recognizedText.text}');
+
+      if (!mounted) {
+        _log.warning('Widget not mounted after text recognition');
+        return;
+      }
+
+      String text = recognizedText.text;
+      _log.info('Attempting to extract VIN from recognized text');
+      String? vin = _extractVin(text);
+
+      if (!mounted) {
+        _log.warning('Widget not mounted after VIN extraction');
+        return;
+      }
+
+      if (vin != null) {
+        _log.info('Potential VIN found: $vin');
+        if (VinValidator.isValid(vin)) {
+          _log.info('VIN validated successfully');
+          setState(() {
+            _vinController.text = vin;
+            _errorMessage = null;
+            _log.info('Updated VIN controller text and cleared error message');
+            _formKey.currentState?.validate();
+          });
+        } else {
+          _log.info('Invalid VIN found, checking for possible corrections');
+          String? suggestion = VinValidator.suggestCorrection(vin);
+          if (suggestion != null) {
+            _log.info('Correction suggested: $suggestion');
+            _showCorrectionDialog(vin, suggestion);
+          } else {
+            _log.info('No correction available for invalid VIN');
+            _showErrorDialog(
+              'Could not validate the detected VIN: $vin\n\n'
+                  'Please try scanning again or enter the VIN manually.',
+            );
+          }
+        }
+      } else {
+        _log.info('No VIN pattern found in recognized text');
+        _showErrorDialog(
+          'No valid VIN pattern found.\n\n'
+              'Recognized text:\n${recognizedText.text}\n\n'
+              'Please try scanning again or enter the VIN manually.',
+        );
+      }
+    } catch (e, stackTrace) {
+      _log.severe('Error during VIN scanning process: $e');
+      _log.severe('Stack trace: $stackTrace');
+      if (mounted) {
+        _showErrorDialog(
+          'Error scanning VIN: ${e.toString()}\n'
+              'Please try again or enter the VIN manually.',
+        );
+      }
     } finally {
       if (mounted) {
+        _log.info('Resetting loading state');
         setState(() => _isLoading = false);
+      } else {
+        _log.warning('Widget not mounted in finally block');
       }
+      _log.info('=== VIN scan process completed ===');
     }
   }
 
+// In the _extractVin method:
   String? _extractVin(String text) {
-    _log.info('Extracting VIN from text: $text');
+    _log.info('=== Starting VIN extraction process ===');
+    _log.info('Input text length: ${text.length}');
+    _log.info('Original text:\n$text');
 
     // Clean the text
     text = text.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), ' ');
+    _log.info('Cleaned text:\n$text');
 
     // Look for exact 17-character sequences that could be VINs
+    _log.info('Searching for exact 17-character VIN pattern');
     RegExp vinPattern = RegExp(r'[A-HJ-NPR-Z0-9]{17}');
     Iterable<Match> matches = vinPattern.allMatches(text);
 
+    int matchCount = matches.length;
+    _log.info('Found $matchCount potential exact matches');
+
     for (Match match in matches) {
       String potentialVin = match.group(0)!;
-      _log.info('Found potential VIN: $potentialVin');
+      _log.info('Checking potential VIN: $potentialVin');
 
       if (VinValidator.isValid(potentialVin)) {
-        _log.info('Valid VIN extracted: $potentialVin');
+        _log.info('Found valid VIN: $potentialVin');
         return potentialVin;
+      } else {
+        _log.info('Invalid VIN pattern: $potentialVin');
       }
     }
 
     // Look for partial matches
+    _log.info('Searching for partial VIN patterns (15-17 characters)');
     RegExp partialPattern = RegExp(r'[A-HJ-NPR-Z0-9]{15,17}');
     matches = partialPattern.allMatches(text);
 
+    int partialMatchCount = matches.length;
+    _log.info('Found $partialMatchCount potential partial matches');
+
     for (Match match in matches) {
       String potentialVin = match.group(0)!;
-      _log.info('Found partial VIN: $potentialVin');
+      _log.info('Checking partial match: $potentialVin');
 
       if (potentialVin.length == 17) {
         String? suggestion = VinValidator.suggestCorrection(potentialVin);
         if (suggestion != null) {
-          _log.info('Suggested correction for VIN: $suggestion');
+          _log.info('Found suggested correction: $suggestion');
           return suggestion;
         }
       }
     }
 
-    // Check individual words for VIN-like sequences
+    // Check individual words
+    _log.info('Checking individual words for VIN-like sequences');
     List<String> words = text.split(RegExp(r'\s+'));
+    _log.info('Found ${words.length} words to check');
+
     for (String word in words) {
       if (word.length >= 15 && word.length <= 17) {
-        _log.info('Checking word for VIN-like sequence: $word');
+        _log.info('Checking word: $word (length: ${word.length})');
 
         String paddedWord = word.padRight(17, '0');
         String? suggestion = VinValidator.suggestCorrection(paddedWord);
 
         if (suggestion != null) {
-          _log.info('Found possible VIN from word: $suggestion');
+          _log.info('Found suggestion from word: $suggestion');
           return suggestion;
         }
       }
     }
 
-    _log.warning('No valid VIN found in the text');
+    _log.info('No valid VIN found in extraction process');
     return null;
   }
 

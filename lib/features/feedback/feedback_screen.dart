@@ -3,7 +3,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:logging/logging.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class FeedbackScreen extends StatefulWidget {
   const FeedbackScreen({super.key});
@@ -20,7 +19,22 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   bool _isSubmitting = false;
 
   @override
+  void initState() {
+    super.initState();
+    _log.info('FeedbackScreen initialized');
+  }
+
+  @override
+  void dispose() {
+    _log.info('FeedbackScreen disposing');
+    _emailController.dispose();
+    _feedbackController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    _log.info('Building FeedbackScreen widget');
     return Scaffold(
       appBar: AppBar(
         title: const Text('Send Feedback'),
@@ -82,9 +96,9 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                     keyboardType: TextInputType.emailAddress,
                     validator: (value) {
                       if (value != null && value.isNotEmpty) {
-                        // Simple email validation
                         if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
                             .hasMatch(value)) {
+                          _log.info('Email validation failed: $value');
                           return 'Please enter a valid email address';
                         }
                       }
@@ -111,9 +125,11 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                     maxLines: 6,
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
+                        _log.info('Feedback validation failed: Empty feedback');
                         return 'Please enter your feedback';
                       }
                       if (value.trim().length < 10) {
+                        _log.info('Feedback validation failed: Too short');
                         return 'Please provide more detailed feedback';
                       }
                       return null;
@@ -153,11 +169,18 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   }
 
   Future<void> _submitFeedback() async {
+    _log.info('Starting feedback submission process');
+
     if (!_formKey.currentState!.validate()) {
+      _log.info('Form validation failed');
       return;
     }
 
-    setState(() => _isSubmitting = true);
+    _log.info('Form validation passed');
+    setState(() {
+      _isSubmitting = true;
+      _log.info('Set _isSubmitting to true');
+    });
 
     try {
       final String emailSubject = 'App Feedback';
@@ -166,10 +189,16 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
           ? _emailController.text
           : null;
 
+      _log.info('Preparing email with subject: $emailSubject');
+      _log.info('Email body length: ${emailBody.length}');
+      if (userEmail != null) {
+        _log.info('Reply-to email: $userEmail');
+      }
+
       // Construct mailto URL
       final Uri emailUri = Uri(
         scheme: 'mailto',
-        path: 'ray.boorsma@gmail.com', // Replace with your email
+        path: 'ray.boorsma@gmail.com',
         query: encodeQueryParameters({
           'subject': emailSubject,
           'body': emailBody,
@@ -177,9 +206,21 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
         }),
       );
 
+      _log.info('Constructed email URI: ${emailUri.toString()}');
+      _log.info('Checking if can launch URL...');
+
       if (await canLaunchUrl(emailUri)) {
-        await launchUrl(emailUri);
+        _log.info('canLaunchUrl returned true, launching email client...');
+
+        await launchUrl(
+          emailUri,
+          mode: LaunchMode.externalApplication,
+        );
+
+        _log.info('Email client launched successfully');
+
         if (mounted) {
+          _log.info('Widget still mounted, showing success message');
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -187,16 +228,23 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
               behavior: SnackBarBehavior.floating,
             ),
           );
+          _log.info('Success message shown and screen popped');
+        } else {
+          _log.warning('Widget not mounted after email launch');
         }
       } else {
+        _log.severe('canLaunchUrl returned false');
         throw 'Could not launch email client';
       }
-    } catch (e) {
-      _log.severe('Error sending feedback: $e');
+    } catch (e, stackTrace) {
+      _log.severe('Error in feedback submission: $e');
+      _log.severe('Stack trace: $stackTrace');
+
       if (mounted) {
+        _log.info('Showing error message to user');
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Error sending feedback. Please try again.'),
+          SnackBar(
+            content: Text('Error sending feedback: $e'),
             behavior: SnackBarBehavior.floating,
             backgroundColor: Colors.red,
           ),
@@ -204,22 +252,23 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
       }
     } finally {
       if (mounted) {
-        setState(() => _isSubmitting = false);
+        setState(() {
+          _isSubmitting = false;
+          _log.info('Reset _isSubmitting to false');
+        });
+      } else {
+        _log.warning('Widget not mounted in finally block');
       }
     }
   }
 
   String? encodeQueryParameters(Map<String, String> params) {
-    return params.entries
+    _log.info('Encoding query parameters: $params');
+    final encoded = params.entries
         .map((e) =>
     '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
         .join('&');
-  }
-
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _feedbackController.dispose();
-    super.dispose();
+    _log.info('Encoded parameters: $encoded');
+    return encoded;
   }
 }
