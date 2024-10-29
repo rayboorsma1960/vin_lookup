@@ -118,7 +118,7 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
       ),
       body: Consumer<VehicleInfoProvider>(
         builder: (context, provider, child) {
-          _log.info('Building VehicleDetailsScreen');
+          //_Log.info('Building VehicleDetailsScreen');
 
           if (provider.isLoading || _isRefreshing) {
             return _buildLoadingState();
@@ -196,7 +196,7 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
       final response = await http.head(uri);
       return response.statusCode == 200;
     } catch (e) {
-      _log.warning('Error checking video availability: $e');
+      //_Log.warning('Error checking video availability: $e');
       return false;
     }
   }
@@ -214,7 +214,7 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
         return InkWell(
           onTap: () async {
             final Uri uri = Uri.parse(url);
-            _log.info('Attempting to play video: $url');
+            //_Log.info('Attempting to play video: $url');
 
             try {
               if (await canLaunchUrl(uri)) {
@@ -229,7 +229,7 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
                 throw 'Video URL is not available';
               }
             } catch (e) {
-              _log.severe('Error playing video: $e');
+              //_Log.severe('Error playing video: $e');
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -339,7 +339,7 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
                         width: double.infinity,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
-                          _log.warning('Failed to load NHTSA image: $error');
+                          //_Log.warning('Failed to load NHTSA image: $error');
                           if (vehicleInfo.safetyRatings['VehiclePicture'] != null &&
                               vehicleInfo.imageUrl.isNotEmpty) {
                             return Image.network(
@@ -348,7 +348,7 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
                               width: double.infinity,
                               fit: BoxFit.cover,
                               errorBuilder: (context, error, stackTrace) {
-                                _log.warning('Failed to load Google image: $error');
+                                //_Log.warning('Failed to load Google image: $error');
                                 return _buildNoImagePlaceholder();
                               },
                               loadingBuilder: (context, child, loadingProgress) {
@@ -581,7 +581,7 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
                                       width: double.infinity,
                                       fit: BoxFit.cover,
                                       errorBuilder: (context, error, stackTrace) {
-                                        _log.warning('Failed to load front crash image: $error');
+                                        //_Log.warning('Failed to load front crash image: $error');
                                         return Container(
                                           height: 150,
                                           width: double.infinity,
@@ -659,7 +659,7 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
                                       width: double.infinity,
                                       fit: BoxFit.cover,
                                       errorBuilder: (context, error, stackTrace) {
-                                        _log.warning('Failed to load side crash image: $error');
+                                        //_Log.warning('Failed to load side crash image: $error');
                                         return Container(
                                           height: 150,
                                           width: double.infinity,

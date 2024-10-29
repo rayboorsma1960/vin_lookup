@@ -71,7 +71,7 @@ class VehicleInfoProvider with ChangeNotifier {
   }
 
   Future<void> fetchVehicleInfo(String vin) async {
-    _log.info('Starting fetchVehicleInfo for VIN: $vin');
+    //_Log.info('Starting fetchVehicleInfo for VIN: $vin');
     _setLoadingState(true);
     _error = null;
 
@@ -83,20 +83,20 @@ class VehicleInfoProvider with ChangeNotifier {
           _vehicleInfo = await _nhtsaService.getVehicleInfo(vin);
 
           if (_vehicleInfo != null) {
-            _log.info('Vehicle info fetched successfully');
+            //_Log.info('Vehicle info fetched successfully');
 
             // Fetch image with timeout
             await _errorHandler.withTimeout(
               operation: () async {
                 final imageQuery = '${_vehicleInfo!.year} ${_vehicleInfo!.make} ${_vehicleInfo!.model}';
-                _log.info('Fetching image for query: $imageQuery');
+                //_Log.info('Fetching image for query: $imageQuery');
                 final imageUrl = await _imageService.getVehicleImage(imageQuery);
                 _vehicleInfo = _vehicleInfo!.copyWith(imageUrl: imageUrl);
               },
               timeout: const Duration(seconds: 10),
               onTimeout: () {
                 // On timeout, just use a placeholder image
-                _log.warning('Image fetch timed out, using placeholder');
+                //_Log.warning('Image fetch timed out, using placeholder');
                 _vehicleInfo = _vehicleInfo!.copyWith(
                     imageUrl: 'https://via.placeholder.com/300x200?text=Vehicle+Image'
                 );
@@ -110,7 +110,7 @@ class VehicleInfoProvider with ChangeNotifier {
                 _vehicleInfo!.model
             );
 
-            _log.info('Found ${_vehicleVariants.length} variants');
+            //_Log.info('Found ${_vehicleVariants.length} variants');
           } else {
             throw VehicleInfoException(
                 'Vehicle info is null after fetching',
@@ -125,7 +125,7 @@ class VehicleInfoProvider with ChangeNotifier {
         },
       );
     } catch (e) {
-      _log.severe('Error in fetchVehicleInfo: $e');
+      //_Log.severe('Error in fetchVehicleInfo: $e');
       if (e is AppException) {
         _error = e;
       } else {
@@ -142,7 +142,7 @@ class VehicleInfoProvider with ChangeNotifier {
   }
 
   Future<void> selectVariantAndFetchSafetyRatings(String vehicleId) async {
-    _log.info('Selecting variant and fetching safety ratings for vehicle ID: $vehicleId');
+    //_Log.info('Selecting variant and fetching safety ratings for vehicle ID: $vehicleId');
     _setLoadingState(true);
     _error = null;
 
@@ -168,12 +168,12 @@ class VehicleInfoProvider with ChangeNotifier {
             safetyRatings: safetyRatings,
           );
 
-          _log.info('Vehicle variant details updated successfully');
+          //_Log.info('Vehicle variant details updated successfully');
         },
         maxAttempts: 2,
       );
     } catch (e) {
-      _log.severe('Error selecting variant: $e');
+      //_Log.severe('Error selecting variant: $e');
       if (e is AppException) {
         _error = e;
       } else {

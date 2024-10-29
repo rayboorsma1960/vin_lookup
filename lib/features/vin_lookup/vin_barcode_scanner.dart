@@ -175,11 +175,11 @@ class VinBarcodeScanner {
     }
 
     if (vin.contains(RegExp(r'[IOQ]'))) {
-      _log.info('VIN contains invalid characters: $vin');
+      //_Log.info('VIN contains invalid characters: $vin');
       return false;
     }
 
-    _log.info('VIN passed validation: $vin');
+    //_Log.info('VIN passed validation: $vin');
     return true;
   }
 }

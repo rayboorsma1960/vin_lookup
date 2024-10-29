@@ -29,9 +29,9 @@ class VinValidator {
   }
 
   static String? suggestCorrection(String input) {
-    _log.info('Attempting to suggest correction for: $input');
+    //_Log.info('Attempting to suggest correction for: $input');
     if (input.length != 17) {
-      _log.warning('Input length is not 17, cannot suggest correction');
+      //_Log.warning('Input length is not 17, cannot suggest correction');
       return null;
     }
 
@@ -50,11 +50,11 @@ class VinValidator {
     }
 
     if (isValid(suggestion)) {
-      _log.info('Suggested correction: $suggestion');
+      //_Log.info('Suggested correction: $suggestion');
       return suggestion;
     }
 
-    _log.warning('Unable to suggest a valid correction');
+    //_Log.warning('Unable to suggest a valid correction');
     return null;
   }
 }

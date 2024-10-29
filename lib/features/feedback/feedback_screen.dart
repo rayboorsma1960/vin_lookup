@@ -172,14 +172,14 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
     _log.info('Starting feedback submission process');
 
     if (!_formKey.currentState!.validate()) {
-      _log.info('Form validation failed');
+      //_Log.info('Form validation failed');
       return;
     }
 
-    _log.info('Form validation passed');
+    //_Log.info('Form validation passed');
     setState(() {
       _isSubmitting = true;
-      _log.info('Set _isSubmitting to true');
+      //_Log.info('Set _isSubmitting to true');
     });
 
     try {
@@ -189,10 +189,10 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
           ? _emailController.text
           : null;
 
-      _log.info('Preparing email with subject: $emailSubject');
-      _log.info('Email body length: ${emailBody.length}');
+      //_Log.info('Preparing email with subject: $emailSubject');
+      //_Log.info('Email body length: ${emailBody.length}');
       if (userEmail != null) {
-        _log.info('Reply-to email: $userEmail');
+        //_Log.info('Reply-to email: $userEmail');
       }
 
       // Construct mailto URL
@@ -206,21 +206,21 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
         }),
       );
 
-      _log.info('Constructed email URI: ${emailUri.toString()}');
-      _log.info('Checking if can launch URL...');
+      //_Log.info('Constructed email URI: ${emailUri.toString()}');
+      //_Log.info('Checking if can launch URL...');
 
       if (await canLaunchUrl(emailUri)) {
-        _log.info('canLaunchUrl returned true, launching email client...');
+        //_Log.info('canLaunchUrl returned true, launching email client...');
 
         await launchUrl(
           emailUri,
           mode: LaunchMode.externalApplication,
         );
 
-        _log.info('Email client launched successfully');
+        //_Log.info('Email client launched successfully');
 
         if (mounted) {
-          _log.info('Widget still mounted, showing success message');
+          //_Log.info('Widget still mounted, showing success message');
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -228,20 +228,20 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
               behavior: SnackBarBehavior.floating,
             ),
           );
-          _log.info('Success message shown and screen popped');
+          //_Log.info('Success message shown and screen popped');
         } else {
-          _log.warning('Widget not mounted after email launch');
+          //_Log.warning('Widget not mounted after email launch');
         }
       } else {
-        _log.severe('canLaunchUrl returned false');
+        //_Log.severe('canLaunchUrl returned false');
         throw 'Could not launch email client';
       }
     } catch (e, stackTrace) {
-      _log.severe('Error in feedback submission: $e');
-      _log.severe('Stack trace: $stackTrace');
+      //_Log.severe('Error in feedback submission: $e');
+      //_Log.severe('Stack trace: $stackTrace');
 
       if (mounted) {
-        _log.info('Showing error message to user');
+        //_Log.info('Showing error message to user');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error sending feedback: $e'),
@@ -254,21 +254,21 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
       if (mounted) {
         setState(() {
           _isSubmitting = false;
-          _log.info('Reset _isSubmitting to false');
+          //_Log.info('Reset _isSubmitting to false');
         });
       } else {
-        _log.warning('Widget not mounted in finally block');
+        //_Log.warning('Widget not mounted in finally block');
       }
     }
   }
 
   String? encodeQueryParameters(Map<String, String> params) {
-    _log.info('Encoding query parameters: $params');
+    //_Log.info('Encoding query parameters: $params');
     final encoded = params.entries
         .map((e) =>
     '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
         .join('&');
-    _log.info('Encoded parameters: $encoded');
+    //_Log.info('Encoded parameters: $encoded');
     return encoded;
   }
 }

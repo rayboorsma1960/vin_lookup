@@ -11,14 +11,14 @@ class GoogleImageService {
     final encodedQuery = Uri.encodeComponent(query);
     final url = 'https://www.googleapis.com/customsearch/v1?q=$encodedQuery&key=$_apiKey&cx=$_cx&searchType=image&num=1';
 
-    _log.info('Fetching image for query: $query');
-    _log.info('Full URL with all parameters: $url');
+    //_Log.info('Fetching image for query: $query');
+    //_Log.info('Full URL with all parameters: $url');
 
     try {
       final response = await http.get(Uri.parse(url));
 
-      _log.info('Response status code: ${response.statusCode}');
-      _log.info('Response body length: ${response.body.length}');
+      //_Log.info('Response status code: ${response.statusCode}');
+      //_Log.info('Response body length: ${response.body.length}');
 
       if (response.statusCode == 200) {
         final jsonResult = json.decode(response.body);
@@ -26,19 +26,19 @@ class GoogleImageService {
 
         if (items != null && items.isNotEmpty) {
           final imageUrl = items[0]['link'] as String;
-          _log.info('Found image URL: $imageUrl');
+          //_Log.info('Found image URL: $imageUrl');
           return imageUrl;
         } else {
-          _log.warning('No image items found in the response');
+          //_Log.warning('No image items found in the response');
         }
       } else {
-        _log.warning('Error: Non-200 status code. Body: ${response.body}');
+        //_Log.warning('Error: Non-200 status code. Body: ${response.body}');
       }
     } catch (e) {
-      _log.severe('Error fetching image: $e');
+      //_Log.severe('Error fetching image: $e');
     }
 
-    _log.info('Returning fallback image URL');
+    //_Log.info('Returning fallback image URL');
     return 'https://via.placeholder.com/300x200?text=No+Image+Available';
   }
 }

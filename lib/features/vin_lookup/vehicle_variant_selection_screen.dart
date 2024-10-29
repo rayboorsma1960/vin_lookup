@@ -48,11 +48,11 @@ class _VehicleVariantSelectionScreenState extends State<VehicleVariantSelectionS
         ),
         body: Consumer<VehicleInfoProvider>(
           builder: (context, provider, child) {
-            _log.info('Consumer builder called with:'
+         /*   //_Log.info('Consumer builder called with:'
                 '\n - variants count: ${provider.vehicleVariants.length}'
                 '\n - isLoading: ${provider.isLoading}'
                 '\n - has error: ${provider.error != null}'
-                '\n - has vehicleInfo: ${provider.vehicleInfo != null}');
+                '\n - has vehicleInfo: ${provider.vehicleInfo != null}'); */
 
             if (_isLoading || provider.isLoading) {
               return _buildLoadingState();
@@ -278,7 +278,7 @@ class _VehicleVariantSelectionScreenState extends State<VehicleVariantSelectionS
     });
 
     try {
-      _log.info('Selecting variant: ${variant['VehicleId']}');
+      //_Log.info('Selecting variant: ${variant['VehicleId']}');
 
       await _provider.selectVariantAndFetchSafetyRatings(
         variant['VehicleId'].toString(),
@@ -303,7 +303,7 @@ class _VehicleVariantSelectionScreenState extends State<VehicleVariantSelectionS
         });
       }
     } catch (e) {
-      _log.severe('Error in handleVariantSelection: $e');
+      //_Log.severe('Error in handleVariantSelection: $e');
       if (mounted) {
         setState(() {
           _errorMessage = 'Failed to load variant details. Please try again.';
