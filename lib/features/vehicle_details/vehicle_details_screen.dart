@@ -3,7 +3,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:url_launcher/url_launcher_string.dart';
 import '../../services/vehicle_info_provider.dart';
 import '../../models/vehicle_info.dart';
 import '../../models/app_exceptions.dart';
@@ -529,7 +528,7 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
                             (match) => ' ${match.group(1)}'
                     ).trim(),
                     entry.value.toString()
-                )).toList(),
+                )),
 
                 // Video Links
                 if (vehicleInfo.safetyRatings['FrontCrashVideo'] != null)

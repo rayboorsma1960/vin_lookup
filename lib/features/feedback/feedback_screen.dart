@@ -236,7 +236,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
         //_Log.severe('canLaunchUrl returned false');
         throw 'Could not launch email client';
       }
-    } catch (e, stackTrace) {
+    } catch (e) {
       //_Log.severe('Error in feedback submission: $e');
       //_Log.severe('Stack trace: $stackTrace');
 

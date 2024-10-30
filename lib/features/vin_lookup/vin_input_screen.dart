@@ -11,7 +11,6 @@ import 'vehicle_variant_selection_screen.dart';
 import '../../features/feedback/feedback_screen.dart';
 import '../vehicle_details/vehicle_details_screen.dart';
 import 'package:logging/logging.dart';
-import 'dart:async'; // Add this import at the top of your file
 import 'package:flutter/services.dart' show PlatformException;
 
 class VinInputScreen extends StatefulWidget {
@@ -375,8 +374,8 @@ class _VinInputScreenState extends State<VinInputScreen> {
         ),
       );
 
-      //_Log.info('Scan result type: ${scanResult.type}');
-      //_Log.info('Scanned barcode: ${scanResult.rawContent}');
+      _log.info('Scan result type: ${scanResult.type}');
+      _log.info('Scanned barcode: ${scanResult.rawContent}');
 
       if (scanResult.type == ResultType.Barcode && scanResult.rawContent.isNotEmpty) {
         String scannedText = scanResult.rawContent.trim().toUpperCase();
@@ -422,7 +421,7 @@ class _VinInputScreenState extends State<VinInputScreen> {
         }
       }
     } on PlatformException catch (e) {
-      //_Log.severe('Platform error while scanning: $e');
+      _log.severe('Platform error while scanning: $e');
       if (e.code == 'PERMISSION_NOT_GRANTED') {
         _showErrorDialog(
           'Camera permission was denied.\n\n'
@@ -435,7 +434,7 @@ class _VinInputScreenState extends State<VinInputScreen> {
         );
       }
     } catch (e) {
-      //_Log.severe('Error scanning VIN barcode: $e');
+      _log.severe('Error scanning VIN barcode: $e');
       _showErrorDialog(
         'Error scanning barcode: ${e.toString()}\n'
             'Please try again or enter the VIN manually.',
@@ -513,7 +512,7 @@ class _VinInputScreenState extends State<VinInputScreen> {
           }
         }
       } catch (e) {
-        //_Log.severe('Unexpected error in _submitVin: $e');
+        _log.severe('Unexpected error in _submitVin: $e');
         if (mounted) {
           setState(() {
             _errorMessage = 'An unexpected error occurred. Please try again.';
@@ -530,112 +529,75 @@ class _VinInputScreenState extends State<VinInputScreen> {
   // In the _scanVin method of VinInputScreen:
 
   Future<void> _scanVin() async {
-    //_Log.info('=== Starting VIN scan process ===');
-
-    if (!mounted) return;
+    _log.info('=== Starting VIN scan process ===');
 
     try {
+      _log.info('Setting initial state (isLoading: true, errorMessage: null)');
       setState(() {
         _isLoading = true;
         _errorMessage = null;
       });
 
-      // Configure image picker options
-      final ImagePicker picker = ImagePicker();
-      final XFile? image = await picker.pickImage(
+      _log.info('Launching camera picker...');
+      final XFile? image = await _picker.pickImage(
         source: ImageSource.camera,
-        preferredCameraDevice: CameraDevice.rear,
         imageQuality: 100,
         maxWidth: 2000,
         maxHeight: 2000,
-      ).catchError((error) {
-        //_Log.severe('Error picking image: $error');
-        throw error;
-      });
+      );
 
-      // Handle case where image capture was cancelled
       if (image == null) {
-        //_Log.info('Image capture cancelled by user');
-        if (!mounted) return;
-        setState(() {
-          _isLoading = false;
-          _errorMessage = null;
-        });
+        _log.info('Camera picker returned null - user likely cancelled');
         return;
       }
 
-      // Ensure the widget is still mounted after image capture
+      _log.info('Image captured successfully: ${image.path}');
+
       if (!mounted) {
-        //_Log.warning('Widget unmounted after image capture');
+        _log.warning('Widget not mounted after image capture');
         return;
       }
 
-      // Process the captured image
-      //_Log.info('Processing captured image: ${image.path}');
-
-      // Create input image from file
+      _log.info('Converting image to InputImage format');
       final inputImage = InputImage.fromFilePath(image.path);
 
-      // Ensure widget is still mounted before processing
-      if (!mounted) return;
-
-      // Show processing indicator
-      setState(() {
-        _errorMessage = null;
-      });
-
-      // Process the image with text recognizer
+      _log.info('Starting text recognition process');
       final RecognizedText recognizedText = await _textRecognizer.processImage(inputImage);
+      _log.info('Text recognition completed. Found ${recognizedText.blocks.length} blocks of text');
+      _log.info('Full recognized text:\n${recognizedText.text}');
 
-      //_Log.info('Text recognition completed. Found ${recognizedText.blocks.length} blocks of text');
-      //_Log.info('Full recognized text:\n${recognizedText.text}');
-
-      // Ensure widget is still mounted after processing
       if (!mounted) {
-        //_Log.warning('Widget unmounted after text recognition');
+        _log.warning('Widget not mounted after text recognition');
         return;
       }
 
-      // Extract VIN from recognized text
-      final String? vin = _extractVin(recognizedText.text);
+      String text = recognizedText.text;
+      _log.info('Attempting to extract VIN from recognized text');
+      String? vin = _extractVin(text);
 
-      // Handle the extracted VIN
+      if (!mounted) {
+        _log.warning('Widget not mounted after VIN extraction');
+        return;
+      }
+
       if (vin != null) {
-        //_Log.info('Potential VIN found: $vin');
-
+        _log.info('Potential VIN found: $vin');
         if (VinValidator.isValid(vin)) {
-          //_Log.info('VIN validated successfully');
-
-          if (!mounted) return;
-
-          // Update the UI with the valid VIN
+          _log.info('VIN validated successfully');
           setState(() {
             _vinController.text = vin;
             _errorMessage = null;
+            _log.info('Updated VIN controller text and cleared error message');
+            _formKey.currentState?.validate();
           });
-
-          // Show success message
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text('VIN successfully scanned'),
-                duration: const Duration(seconds: 2),
-                behavior: SnackBarBehavior.floating,
-                margin: EdgeInsets.only(
-                  bottom: MediaQuery.of(context).size.height - 100,
-                  right: 20,
-                  left: 20,
-                ),
-              ),
-            );
-          }
         } else {
-          //_Log.info('Invalid VIN found, checking for corrections');
+          _log.info('Invalid VIN found, checking for possible corrections');
           String? suggestion = VinValidator.suggestCorrection(vin);
-
-          if (suggestion != null && mounted) {
-            await _showCorrectionDialog(vin, suggestion);
-          } else if (mounted) {
+          if (suggestion != null) {
+            _log.info('Correction suggested: $suggestion');
+            _showCorrectionDialog(vin, suggestion);
+          } else {
+            _log.info('No correction available for invalid VIN');
             _showErrorDialog(
               'Could not validate the detected VIN: $vin\n\n'
                   'Please try scanning again or enter the VIN manually.',
@@ -643,127 +605,109 @@ class _VinInputScreenState extends State<VinInputScreen> {
           }
         }
       } else {
-        //_Log.info('No VIN pattern found in scanned text');
-        if (mounted) {
-          _showErrorDialog(
-            'No valid VIN pattern found in the scanned image.\n\n'
-                'Please try scanning again or enter the VIN manually.',
-          );
-        }
-      }
-    } on PlatformException catch (e) {
-      //_Log.severe('Platform error while scanning: $e');
-      if (mounted) {
-        if (e.code == 'camera_access_denied') {
-          _showErrorDialog(
-            'Camera permission is required to scan VIN.\n'
-                'Please grant camera permission in your device settings.',
-          );
-        } else {
-          _showErrorDialog(
-            'Error accessing camera: ${e.message}\n'
-                'Please try again or enter the VIN manually.',
-          );
-        }
+        _log.info('No VIN pattern found in recognized text');
+        _showErrorDialog(
+          'No valid VIN pattern found.\n\n'
+              'Recognized text:\n${recognizedText.text}\n\n'
+              'Please try scanning again or enter the VIN manually.',
+        );
       }
     } catch (e, stackTrace) {
-      //_Log.severe('Error during VIN scanning process: $e');
-      //_Log.severe('Stack trace: $stackTrace');
+      _log.severe('Error during VIN scanning process: $e');
+      _log.severe('Stack trace: $stackTrace');
       if (mounted) {
         _showErrorDialog(
-          'An error occurred while scanning.\n'
+          'Error scanning VIN: ${e.toString()}\n'
               'Please try again or enter the VIN manually.',
         );
       }
     } finally {
-      // Cleanup and reset state if the widget is still mounted
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-        //_Log.info('Reset loading state');
+        _log.info('Resetting loading state');
+        setState(() => _isLoading = false);
+      } else {
+        _log.warning('Widget not mounted in finally block');
       }
-      //_Log.info('=== VIN scan process completed ===');
+      _log.info('=== VIN scan process completed ===');
     }
   }
 
 // In the _extractVin method:
   String? _extractVin(String text) {
-    //_Log.info('=== Starting VIN extraction process ===');
-    //_Log.info('Input text length: ${text.length}');
-    //_Log.info('Original text:\n$text');
+    _log.info('=== Starting VIN extraction process ===');
+    _log.info('Input text length: ${text.length}');
+    _log.info('Original text:\n$text');
 
     // Clean the text
     text = text.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), ' ');
-    //_Log.info('Cleaned text:\n$text');
+    _log.info('Cleaned text:\n$text');
 
     // Look for exact 17-character sequences that could be VINs
-    //_Log.info('Searching for exact 17-character VIN pattern');
+    _log.info('Searching for exact 17-character VIN pattern');
     RegExp vinPattern = RegExp(r'[A-HJ-NPR-Z0-9]{17}');
     Iterable<Match> matches = vinPattern.allMatches(text);
 
     int matchCount = matches.length;
-    //_Log.info('Found $matchCount potential exact matches');
+    _log.info('Found $matchCount potential exact matches');
 
     for (Match match in matches) {
       String potentialVin = match.group(0)!;
-      //_Log.info('Checking potential VIN: $potentialVin');
+      _log.info('Checking potential VIN: $potentialVin');
 
       if (VinValidator.isValid(potentialVin)) {
-        //_Log.info('Found valid VIN: $potentialVin');
+        _log.info('Found valid VIN: $potentialVin');
         return potentialVin;
       } else {
-        //_Log.info('Invalid VIN pattern: $potentialVin');
+        _log.info('Invalid VIN pattern: $potentialVin');
       }
     }
 
     // Look for partial matches
-    //_Log.info('Searching for partial VIN patterns (15-17 characters)');
+    _log.info('Searching for partial VIN patterns (15-17 characters)');
     RegExp partialPattern = RegExp(r'[A-HJ-NPR-Z0-9]{15,17}');
     matches = partialPattern.allMatches(text);
 
     int partialMatchCount = matches.length;
-    //_Log.info('Found $partialMatchCount potential partial matches');
+    _log.info('Found $partialMatchCount potential partial matches');
 
     for (Match match in matches) {
       String potentialVin = match.group(0)!;
-      //_Log.info('Checking partial match: $potentialVin');
+      _log.info('Checking partial match: $potentialVin');
 
       if (potentialVin.length == 17) {
         String? suggestion = VinValidator.suggestCorrection(potentialVin);
         if (suggestion != null) {
-          //_Log.info('Found suggested correction: $suggestion');
+          _log.info('Found suggested correction: $suggestion');
           return suggestion;
         }
       }
     }
 
     // Check individual words
-    //_Log.info('Checking individual words for VIN-like sequences');
+    _log.info('Checking individual words for VIN-like sequences');
     List<String> words = text.split(RegExp(r'\s+'));
-    //_Log.info('Found ${words.length} words to check');
+    _log.info('Found ${words.length} words to check');
 
     for (String word in words) {
       if (word.length >= 15 && word.length <= 17) {
-        //_Log.info('Checking word: $word (length: ${word.length})');
+        _log.info('Checking word: $word (length: ${word.length})');
 
         String paddedWord = word.padRight(17, '0');
         String? suggestion = VinValidator.suggestCorrection(paddedWord);
 
         if (suggestion != null) {
-          //_Log.info('Found suggestion from word: $suggestion');
+          _log.info('Found suggestion from word: $suggestion');
           return suggestion;
         }
       }
     }
 
-    //_Log.info('No valid VIN found in extraction process');
+    _log.info('No valid VIN found in extraction process');
     return null;
   }
 
-  // Update the _showCorrectionDialog to return Future<void>
-  Future<void> _showCorrectionDialog(String original, String suggestion) async {
-    await showDialog(
+  void _showCorrectionDialog(String original, String suggestion) {
+    showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(

@@ -17,37 +17,33 @@ class NetworkException extends AppException {
   final String? code;
 
   NetworkException(
-      String message, {
+      super.message, {
         this.isConnectivityError = false,
         this.isServerError = false,
         this.statusCode,
         this.code,
-        dynamic originalError,
-      }) : super(message, originalError: originalError);
+        super.originalError,
+      });
 }
 
 class DataParsingException extends AppException {
-  DataParsingException(String message, {dynamic originalError})
-      : super(message, originalError: originalError);
+  DataParsingException(super.message, {super.originalError});
 }
 
 class ResourceNotFoundException extends AppException {
   final String code;
 
-  ResourceNotFoundException(String message, {required this.code, dynamic originalError})
-      : super(message, originalError: originalError);
+  ResourceNotFoundException(super.message, {required this.code, super.originalError});
 }
 
 class ValidationException extends AppException {
   final String code;
 
-  ValidationException(String message, {required this.code, dynamic originalError})
-      : super(message, originalError: originalError);
+  ValidationException(super.message, {required this.code, super.originalError});
 }
 
 class VehicleInfoException extends AppException {
   final String? vin;
 
-  VehicleInfoException(String message, {this.vin, dynamic originalError})
-      : super(message, originalError: originalError);
+  VehicleInfoException(super.message, {this.vin, super.originalError});
 }

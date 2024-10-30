@@ -15,7 +15,7 @@ class NHTSAApiService {
       final basicInfo = await _getExtendedInfo(vin);
       final recalls = await getRecalls(basicInfo.make, basicInfo.model, basicInfo.year.toString());
       return basicInfo.copyWith(recalls: recalls);
-    } on NetworkException catch (e) {
+    } on NetworkException {
       //_Log.severe('Network error in getVehicleInfo: $e');
       rethrow;
     } on AppException {
@@ -248,7 +248,7 @@ class NHTSAApiService {
             return recalls;
           }
           //_Log.info('No recalls found for $year $make $model');
-        } on FormatException catch (e) {
+        } on FormatException {
           //_Log.warning('Error parsing recalls response: $e');
         }
       }
@@ -290,7 +290,7 @@ class NHTSAApiService {
             //_Log.info('Found ${data['Count']} vehicle variants');
             return List<Map<String, dynamic>>.from(data['Results']);
           }
-        } on FormatException catch (e) {
+        } on FormatException {
           //_Log.warning('Error parsing vehicle variants response: $e');
         }
       }
@@ -326,7 +326,7 @@ class NHTSAApiService {
             //_Log.info('Found safety ratings for vehicle ID: $vehicleId');
             return data['Results'][0];
           }
-        } on FormatException catch (e) {
+        } on FormatException {
           //_Log.warning('Error parsing safety ratings response: $e');
         }
       }
