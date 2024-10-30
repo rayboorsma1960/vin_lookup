@@ -375,8 +375,8 @@ class _VinInputScreenState extends State<VinInputScreen> {
         ),
       );
 
-      _log.info('Scan result type: ${scanResult.type}');
-      _log.info('Scanned barcode: ${scanResult.rawContent}');
+      //_log.info('Scan result type: ${scanResult.type}');
+      //_log.info('Scanned barcode: ${scanResult.rawContent}');
 
       if (scanResult.type == ResultType.Barcode && scanResult.rawContent.isNotEmpty) {
         String scannedText = scanResult.rawContent.trim().toUpperCase();
@@ -422,7 +422,7 @@ class _VinInputScreenState extends State<VinInputScreen> {
         }
       }
     } on PlatformException catch (e) {
-      _log.severe('Platform error while scanning: $e');
+      //_log.severe('Platform error while scanning: $e');
       if (e.code == 'PERMISSION_NOT_GRANTED') {
         _showErrorDialog(
           'Camera permission was denied.\n\n'
@@ -435,7 +435,7 @@ class _VinInputScreenState extends State<VinInputScreen> {
         );
       }
     } catch (e) {
-      _log.severe('Error scanning VIN barcode: $e');
+      //_log.severe('Error scanning VIN barcode: $e');
       _showErrorDialog(
         'Error scanning barcode: ${e.toString()}\n'
             'Please try again or enter the VIN manually.',
@@ -513,7 +513,7 @@ class _VinInputScreenState extends State<VinInputScreen> {
           }
         }
       } catch (e) {
-        _log.severe('Unexpected error in _submitVin: $e');
+        //_log.severe('Unexpected error in _submitVin: $e');
         if (mounted) {
           setState(() {
             _errorMessage = 'An unexpected error occurred. Please try again.';
@@ -565,7 +565,7 @@ class _VinInputScreenState extends State<VinInputScreen> {
         );
       }
     } catch (e) {
-      _log.severe('Error during VIN scanning process: $e');
+      //_log.severe('Error during VIN scanning process: $e');
       if (mounted) {
         _showErrorDialog(
           'Error scanning VIN: ${e.toString()}\n'
@@ -581,75 +581,75 @@ class _VinInputScreenState extends State<VinInputScreen> {
 
 // In the _extractVin method:
   String? _extractVin(String text) {
-    _log.info('=== Starting VIN extraction process ===');
-    _log.info('Input text length: ${text.length}');
-    _log.info('Original text:\n$text');
+    //_log.info('=== Starting VIN extraction process ===');
+    //_log.info('Input text length: ${text.length}');
+    //_log.info('Original text:\n$text');
 
     // Clean the text
     text = text.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), ' ');
-    _log.info('Cleaned text:\n$text');
+    //_log.info('Cleaned text:\n$text');
 
     // Look for exact 17-character sequences that could be VINs
-    _log.info('Searching for exact 17-character VIN pattern');
+    //_log.info('Searching for exact 17-character VIN pattern');
     RegExp vinPattern = RegExp(r'[A-HJ-NPR-Z0-9]{17}');
     Iterable<Match> matches = vinPattern.allMatches(text);
 
     int matchCount = matches.length;
-    _log.info('Found $matchCount potential exact matches');
+    //_log.info('Found $matchCount potential exact matches');
 
     for (Match match in matches) {
       String potentialVin = match.group(0)!;
-      _log.info('Checking potential VIN: $potentialVin');
+      //_log.info('Checking potential VIN: $potentialVin');
 
       if (VinValidator.isValid(potentialVin)) {
-        _log.info('Found valid VIN: $potentialVin');
+        //_log.info('Found valid VIN: $potentialVin');
         return potentialVin;
       } else {
-        _log.info('Invalid VIN pattern: $potentialVin');
+        //_log.info('Invalid VIN pattern: $potentialVin');
       }
     }
 
     // Look for partial matches
-    _log.info('Searching for partial VIN patterns (15-17 characters)');
+    //_log.info('Searching for partial VIN patterns (15-17 characters)');
     RegExp partialPattern = RegExp(r'[A-HJ-NPR-Z0-9]{15,17}');
     matches = partialPattern.allMatches(text);
 
     int partialMatchCount = matches.length;
-    _log.info('Found $partialMatchCount potential partial matches');
+    //_log.info('Found $partialMatchCount potential partial matches');
 
     for (Match match in matches) {
       String potentialVin = match.group(0)!;
-      _log.info('Checking partial match: $potentialVin');
+      //_log.info('Checking partial match: $potentialVin');
 
       if (potentialVin.length == 17) {
         String? suggestion = VinValidator.suggestCorrection(potentialVin);
         if (suggestion != null) {
-          _log.info('Found suggested correction: $suggestion');
+          //_log.info('Found suggested correction: $suggestion');
           return suggestion;
         }
       }
     }
 
     // Check individual words
-    _log.info('Checking individual words for VIN-like sequences');
+    //_log.info('Checking individual words for VIN-like sequences');
     List<String> words = text.split(RegExp(r'\s+'));
-    _log.info('Found ${words.length} words to check');
+    //_log.info('Found ${words.length} words to check');
 
     for (String word in words) {
       if (word.length >= 15 && word.length <= 17) {
-        _log.info('Checking word: $word (length: ${word.length})');
+        //_log.info('Checking word: $word (length: ${word.length})');
 
         String paddedWord = word.padRight(17, '0');
         String? suggestion = VinValidator.suggestCorrection(paddedWord);
 
         if (suggestion != null) {
-          _log.info('Found suggestion from word: $suggestion');
+          //_log.info('Found suggestion from word: $suggestion');
           return suggestion;
         }
       }
     }
 
-    _log.info('No valid VIN found in extraction process');
+    //_log.info('No valid VIN found in extraction process');
     return null;
   }
 
