@@ -10,6 +10,7 @@ import '../../services/vin_validator.dart';
 import 'vehicle_variant_selection_screen.dart';
 import '../../features/feedback/feedback_screen.dart';
 import '../vehicle_details/vehicle_details_screen.dart';
+import 'vin_image_scanner.dart';
 import 'package:logging/logging.dart';
 import 'package:flutter/services.dart' show PlatformException;
 
@@ -529,92 +530,42 @@ class _VinInputScreenState extends State<VinInputScreen> {
   // In the _scanVin method of VinInputScreen:
 
   Future<void> _scanVin() async {
-    _log.info('=== Starting VIN scan process ===');
-
     try {
-      _log.info('Setting initial state (isLoading: true, errorMessage: null)');
       setState(() {
         _isLoading = true;
         _errorMessage = null;
       });
 
-      _log.info('Launching camera picker...');
-      final XFile? image = await _picker.pickImage(
-        source: ImageSource.camera,
-        imageQuality: 100,
-        maxWidth: 2000,
-        maxHeight: 2000,
-      );
+      final String? scannedVin = await VinImageScanner.scanVin();
 
-      if (image == null) {
-        _log.info('Camera picker returned null - user likely cancelled');
-        return;
-      }
+      if (!mounted) return;
 
-      _log.info('Image captured successfully: ${image.path}');
-
-      if (!mounted) {
-        _log.warning('Widget not mounted after image capture');
-        return;
-      }
-
-      _log.info('Converting image to InputImage format');
-      final inputImage = InputImage.fromFilePath(image.path);
-
-      _log.info('Starting text recognition process');
-      final RecognizedText recognizedText = await _textRecognizer.processImage(inputImage);
-      _log.info('Text recognition completed. Found ${recognizedText.blocks.length} blocks of text');
-      _log.info('Full recognized text:\n${recognizedText.text}');
-
-      if (!mounted) {
-        _log.warning('Widget not mounted after text recognition');
-        return;
-      }
-
-      String text = recognizedText.text;
-      _log.info('Attempting to extract VIN from recognized text');
-      String? vin = _extractVin(text);
-
-      if (!mounted) {
-        _log.warning('Widget not mounted after VIN extraction');
-        return;
-      }
-
-      if (vin != null) {
-        _log.info('Potential VIN found: $vin');
-        if (VinValidator.isValid(vin)) {
-          _log.info('VIN validated successfully');
+      if (scannedVin != null) {
+        if (VinValidator.isValid(scannedVin)) {
           setState(() {
-            _vinController.text = vin;
+            _vinController.text = scannedVin;
             _errorMessage = null;
-            _log.info('Updated VIN controller text and cleared error message');
             _formKey.currentState?.validate();
           });
         } else {
-          _log.info('Invalid VIN found, checking for possible corrections');
-          String? suggestion = VinValidator.suggestCorrection(vin);
+          String? suggestion = VinValidator.suggestCorrection(scannedVin);
           if (suggestion != null) {
-            _log.info('Correction suggested: $suggestion');
-            _showCorrectionDialog(vin, suggestion);
+            _showCorrectionDialog(scannedVin, suggestion);
           } else {
-            _log.info('No correction available for invalid VIN');
             _showErrorDialog(
-              'Could not validate the detected VIN: $vin\n\n'
+              'Could not validate the detected VIN: $scannedVin\n\n'
                   'Please try scanning again or enter the VIN manually.',
             );
           }
         }
       } else {
-        _log.info('No VIN pattern found in recognized text');
         _showErrorDialog(
           'No valid VIN pattern found.\n\n'
-              'Recognized text:\n${recognizedText.text}\n\n'
               'Please try scanning again or enter the VIN manually.',
         );
       }
-    } catch (e, stackTrace) {
+    } catch (e) {
       _log.severe('Error during VIN scanning process: $e');
-      _log.severe('Stack trace: $stackTrace');
       if (mounted) {
         _showErrorDialog(
           'Error scanning VIN: ${e.toString()}\n'
@@ -623,12 +574,8 @@ class _VinInputScreenState extends State<VinInputScreen> {
       }
     } finally {
       if (mounted) {
-        _log.info('Resetting loading state');
         setState(() => _isLoading = false);
-      } else {
-        _log.warning('Widget not mounted in finally block');
       }
-      _log.info('=== VIN scan process completed ===');
     }
   }
 
