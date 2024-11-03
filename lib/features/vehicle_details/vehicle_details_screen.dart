@@ -8,6 +8,8 @@ import '../../models/vehicle_info.dart';
 import '../../models/app_exceptions.dart';
 import 'package:logging/logging.dart';
 import 'package:http/http.dart' as http;  // Add this line
+import '../complaints/complaints_dashboard_screen.dart';
+
 
 // Add the StarRating widget here, BEFORE the VehicleDetailsScreen class:
 class StarRating extends StatelessWidget {
@@ -715,6 +717,55 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
                     ],
                   ),
               ]),
+
+            // In the _buildContent method of vehicle_details_screen.dart
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                border: Border.all(color: Colors.red.shade200),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Card(
+                elevation: 0,
+                color: Colors.transparent,
+                margin: EdgeInsets.zero,
+                child: ListTile(
+                  leading: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade100,
+                      shape: BoxShape.circle,
+                    ),
+                    padding: const EdgeInsets.all(8),
+                    child: Icon(Icons.report_problem, color: Colors.red.shade700, size: 24),
+                  ),
+                  title: Text(
+                    'View Vehicle Complaints',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.red.shade900,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Review reported issues and safety concerns',
+                    style: TextStyle(color: Colors.red.shade800),
+                  ),
+                  trailing: const Icon(Icons.arrow_forward_ios),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ComplaintsDashboardScreen(
+                          make: vehicleInfo.make,
+                          model: vehicleInfo.model,
+                          year: vehicleInfo.year,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
 
             if (vehicleInfo.recalls.isNotEmpty)
               _buildInfoSection('Recalls',

@@ -16,12 +16,10 @@ class NHTSAApiService {
       final recalls = await getRecalls(basicInfo.make, basicInfo.model, basicInfo.year.toString());
       return basicInfo.copyWith(recalls: recalls);
     } on NetworkException {
-      //_Log.severe('Network error in getVehicleInfo: $e');
       rethrow;
     } on AppException {
       rethrow;
     } catch (e) {
-      //_Log.severe('Error in getVehicleInfo: $e');
       if (e.toString().contains('SocketException') ||
           e.toString().contains('Failed host lookup')) {
         throw NetworkException(
@@ -37,6 +35,7 @@ class NHTSAApiService {
       );
     }
   }
+
   Future<VehicleInfo> _getExtendedInfo(String vin) async {
     try {
       final response = await http.get(Uri.parse('${baseUrl}DecodeVinValuesExtended/$vin?format=json'));
@@ -78,8 +77,6 @@ class NHTSAApiService {
             code: 'INVALID_RESPONSE',
           );
         }
-
-        //_Log.info('Decoded VIN response successfully');
 
         return VehicleInfo(
           // Basic Vehicle Identification
@@ -205,7 +202,6 @@ class NHTSAApiService {
         );
       }
     } catch (e) {
-      //_Log.severe('Error in _getExtendedInfo: $e');
       if (e.toString().contains('SocketException') ||
           e.toString().contains('Failed host lookup')) {
         throw NetworkException(
@@ -223,44 +219,37 @@ class NHTSAApiService {
       );
     }
   }
+
   Future<List<Map<String, dynamic>>> getRecalls(String make, String model, String year) async {
     try {
       final encodedMake = Uri.encodeComponent(make);
       final encodedModel = Uri.encodeComponent(model);
       final url = '$recallsUrl?make=$encodedMake&model=$encodedModel&modelYear=$year';
 
-      //_Log.info('Fetching recalls from URL: $url');
       final response = await http.get(Uri.parse(url));
 
       if (response.statusCode == 503) {
-        //_Log.warning('Recalls service is down (503)');
         return [];  // Return empty list instead of throwing for recalls
       }
 
       if (response.statusCode == 200) {
         try {
           final data = json.decode(response.body);
-          //_Log.info('Recalls API response: $data');
 
           if (data['Count'] > 0 && data['results'] is List) {
             final recalls = (data['results'] as List).cast<Map<String, dynamic>>();
-            //_Log.info('Found ${recalls.length} recalls for $year $make $model');
             return recalls;
           }
-          //_Log.info('No recalls found for $year $make $model');
         } on FormatException {
-          //_Log.warning('Error parsing recalls response: $e');
+          // Handle parsing errors
         }
       }
 
-      //_Log.warning('Failed to fetch recalls. Status code: ${response.statusCode}');
       return [];
     } catch (e) {
       if (e.toString().contains('SocketException') ||
           e.toString().contains('Failed host lookup')) {
-        //_Log.warning('Network connectivity issue while fetching recalls: $e');
-      } else {
-        //_Log.severe('Error fetching recalls: $e');
+        // Handle network errors
       }
       return [];  // Return empty list for recalls errors to not block main flow
     }
@@ -273,49 +262,41 @@ class NHTSAApiService {
       final encodedModel = Uri.encodeComponent(model);
       final url = '$safetyRatingsUrl/modelyear/$encodedYear/make/$encodedMake/model/$encodedModel?format=json';
 
-      //_Log.info('Fetching vehicle variants from URL: $url');
       final response = await http.get(Uri.parse(url));
 
       if (response.statusCode == 503) {
-        //_Log.warning('Vehicle variants service is down (503)');
         return [];  // Return empty list instead of throwing
       }
 
       if (response.statusCode == 200) {
         try {
           final data = json.decode(response.body);
-          //_Log.info('Vehicle variants API response: $data');
 
           if (data['Count'] > 0 && data['Results'] is List) {
-            //_Log.info('Found ${data['Count']} vehicle variants');
             return List<Map<String, dynamic>>.from(data['Results']);
           }
         } on FormatException {
-          //_Log.warning('Error parsing vehicle variants response: $e');
+          // Handle parsing errors
         }
       }
 
-      //_Log.warning('No vehicle variants found for $year $make $model');
       return [];
     } catch (e) {
       if (e.toString().contains('SocketException') ||
           e.toString().contains('Failed host lookup')) {
-        //_Log.warning('Network connectivity issue while fetching variants: $e');
-      } else {
-        //_Log.severe('Error fetching vehicle variants: $e');
+        // Handle network errors
       }
       return [];  // Return empty list for variants errors to not block main flow
     }
   }
+
   Future<Map<String, dynamic>> getSafetyRatings(String vehicleId) async {
     try {
       final url = '$safetyRatingsUrl/VehicleId/$vehicleId?format=json';
-      //_Log.info('Fetching safety ratings from URL: $url');
 
       final response = await http.get(Uri.parse(url));
 
       if (response.statusCode == 503) {
-        //_Log.warning('Safety ratings service is down (503)');
         return {};  // Return empty map instead of throwing
       }
 
@@ -323,22 +304,18 @@ class NHTSAApiService {
         try {
           final data = json.decode(response.body);
           if (data['Count'] > 0 && data['Results'] is List && data['Results'].isNotEmpty) {
-            //_Log.info('Found safety ratings for vehicle ID: $vehicleId');
             return data['Results'][0];
           }
         } on FormatException {
-          //_Log.warning('Error parsing safety ratings response: $e');
+          // Handle parsing errors
         }
       }
 
-      //_Log.warning('No safety ratings found for vehicle ID: $vehicleId');
       return {};
     } catch (e) {
       if (e.toString().contains('SocketException') ||
           e.toString().contains('Failed host lookup')) {
-        //_Log.warning('Network connectivity issue while fetching safety ratings: $e');
-      } else {
-        //_Log.severe('Error fetching safety ratings: $e');
+        // Handle network errors
       }
       return {};  // Return empty map for safety ratings errors to not block main flow
     }

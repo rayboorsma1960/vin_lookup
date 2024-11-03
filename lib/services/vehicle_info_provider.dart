@@ -19,14 +19,10 @@ class VehicleInfoProvider with ChangeNotifier {
   bool _isLoading = false;
   AppException? _error;
 
-  // Updating error type to be more specific
   VehicleInfo? get vehicleInfo => _vehicleInfo;
   List<Map<String, dynamic>> get vehicleVariants => _vehicleVariants;
   bool get isLoading => _isLoading;
   AppException? get error => _error;
-
-  // Helper method to get user-friendly error message
-  // In VehicleInfoProvider class
 
   String getUserFriendlyError() {
     if (_error == null) return '';
@@ -34,7 +30,6 @@ class VehicleInfoProvider with ChangeNotifier {
     if (_error is NetworkException) {
       final networkError = _error as NetworkException;
 
-      // Specifically check for 503 status code
       if (networkError.statusCode == 503) {
         return 'The NHTSA vehicle information service is temporarily unavailable.\n\n'
             'This is a known issue with the government database service, not with your device '
@@ -54,7 +49,6 @@ class VehicleInfoProvider with ChangeNotifier {
     } else if (_error is ValidationException) {
       return 'Invalid vehicle data received. Please try again.';
     } else if (_error is VehicleInfoException) {
-      // Also check VehicleInfoException's originalError for NetworkException with 503
       if (_error!.originalError is NetworkException) {
         final networkError = _error!.originalError as NetworkException;
         if (networkError.statusCode == 503) {
@@ -71,68 +65,72 @@ class VehicleInfoProvider with ChangeNotifier {
   }
 
   Future<void> fetchVehicleInfo(String vin) async {
-    //_Log.info('Starting fetchVehicleInfo for VIN: $vin');
     _setLoadingState(true);
     _error = null;
 
     try {
-      // Use error handler for the entire operation
       await _errorHandler.withRetry(
         operation: () async {
-          // Fetch basic vehicle info
+          // First fetch basic vehicle info
           _vehicleInfo = await _nhtsaService.getVehicleInfo(vin);
 
           if (_vehicleInfo != null) {
-            //_Log.info('Vehicle info fetched successfully');
-
-            // Fetch image with timeout
-            await _errorHandler.withTimeout(
-              operation: () async {
-                final imageQuery = '${_vehicleInfo!.year} ${_vehicleInfo!.make} ${_vehicleInfo!.model}';
-                //_Log.info('Fetching image for query: $imageQuery');
-                final imageUrl = await _imageService.getVehicleImage(imageQuery);
-                _vehicleInfo = _vehicleInfo!.copyWith(imageUrl: imageUrl);
-              },
-              timeout: const Duration(seconds: 10),
-              onTimeout: () {
-                // On timeout, just use a placeholder image
-                //_Log.warning('Image fetch timed out, using placeholder');
-                _vehicleInfo = _vehicleInfo!.copyWith(
-                    imageUrl: 'https://via.placeholder.com/300x200?text=Vehicle+Image'
-                );
-              },
-            );
-
-            // Fetch vehicle variants
-            _vehicleVariants = await _nhtsaService.getVehicleVariants(
+            // Fetch all additional data in parallel
+            final futures = await Future.wait([
+              // Image fetch with timeout
+              _errorHandler.withTimeout(
+                operation: () async {
+                  final imageQuery = '${_vehicleInfo!.year} ${_vehicleInfo!.make} ${_vehicleInfo!.model}';
+                  return await _imageService.getVehicleImage(imageQuery);
+                },
+                timeout: const Duration(seconds: 10),
+                onTimeout: () => 'https://via.placeholder.com/300x200?text=Vehicle+Image',
+              ),
+              // Fetch recalls
+              _nhtsaService.getRecalls(
+                _vehicleInfo!.make,
+                _vehicleInfo!.model,
+                _vehicleInfo!.year.toString(),
+              ),
+              // Fetch vehicle variants
+              _nhtsaService.getVehicleVariants(
                 _vehicleInfo!.year.toString(),
                 _vehicleInfo!.make,
-                _vehicleInfo!.model
+                _vehicleInfo!.model,
+              ),
+            ]);
+
+            // Update vehicle info with all fetched data
+            final imageUrl = futures[0] as String;
+            final recalls = futures[1] as List<Map<String, dynamic>>;
+            _vehicleVariants = futures[2] as List<Map<String, dynamic>>;
+
+            _vehicleInfo = _vehicleInfo!.copyWith(
+              imageUrl: imageUrl,
+              recalls: recalls,
+              complaints: [], // Initialize with empty list since we're handling complaints separately
             );
 
-            //_Log.info('Found ${_vehicleVariants.length} variants');
           } else {
             throw VehicleInfoException(
-                'Vehicle info is null after fetching',
-                vin: vin
+              'Vehicle info is null after fetching',
+              vin: vin,
             );
           }
         },
         maxAttempts: 3,
         shouldRetry: (e) {
-          // Only retry network errors and not found errors
           return e is NetworkException || e is ResourceNotFoundException;
         },
       );
     } catch (e) {
-      //_Log.severe('Error in fetchVehicleInfo: $e');
       if (e is AppException) {
         _error = e;
       } else {
         _error = VehicleInfoException(
-            'An unexpected error occurred',
-            vin: vin,
-            originalError: e
+          'An unexpected error occurred',
+          vin: vin,
+          originalError: e,
         );
       }
       _vehicleInfo = null;
@@ -142,44 +140,37 @@ class VehicleInfoProvider with ChangeNotifier {
   }
 
   Future<void> selectVariantAndFetchSafetyRatings(String vehicleId) async {
-    //_Log.info('Selecting variant and fetching safety ratings for vehicle ID: $vehicleId');
     _setLoadingState(true);
     _error = null;
 
     try {
       await _errorHandler.withRetry(
         operation: () async {
-          // Find the selected variant
           final selectedVariant = _vehicleVariants.firstWhere(
                 (variant) => variant['VehicleId'].toString() == vehicleId,
             orElse: () => throw ResourceNotFoundException(
-                'Selected variant not found',
-                code: 'VARIANT_NOT_FOUND'
+              'Selected variant not found',
+              code: 'VARIANT_NOT_FOUND',
             ),
           );
 
-          // Fetch safety ratings
           final safetyRatings = await _nhtsaService.getSafetyRatings(vehicleId);
 
-          // Update vehicle info with variant-specific details and safety ratings
           _vehicleInfo = _vehicleInfo?.copyWith(
             trim: selectedVariant['Trim'] ?? _vehicleInfo?.trim ?? 'N/A',
             bodyClass: selectedVariant['BodyStyle'] ?? _vehicleInfo?.bodyClass ?? 'N/A',
             safetyRatings: safetyRatings,
           );
-
-          //_Log.info('Vehicle variant details updated successfully');
         },
         maxAttempts: 2,
       );
     } catch (e) {
-      //_Log.severe('Error selecting variant: $e');
       if (e is AppException) {
         _error = e;
       } else {
         _error = VehicleInfoException(
-            'Failed to fetch variant information',
-            originalError: e
+          'Failed to fetch variant information',
+          originalError: e,
         );
       }
     } finally {
