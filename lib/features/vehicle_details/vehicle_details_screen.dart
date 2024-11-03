@@ -9,6 +9,7 @@ import '../../models/app_exceptions.dart';
 import 'package:logging/logging.dart';
 import 'package:http/http.dart' as http;  // Add this line
 import '../complaints/complaints_dashboard_screen.dart';
+import '../recalls/recalls_dashboard_screen.dart';
 
 
 // Add the StarRating widget here, BEFORE the VehicleDetailsScreen class:
@@ -768,147 +769,53 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
             ),
 
             if (vehicleInfo.recalls.isNotEmpty)
-              _buildInfoSection('Recalls',
-                vehicleInfo.recalls.map((recall) => Card(
-                  margin: const EdgeInsets.only(bottom: 16.0),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Campaign Number Row
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8.0,
-                            vertical: 4.0,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.red[50],
-                            borderRadius: BorderRadius.circular(4.0),
-                          ),
-                          child: Text(
-                            'Campaign #${recall['NHTSACampaignNumber']?.toString() ?? ''}',
-                            style: TextStyle(
-                              color: Colors.red[900],
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-
-                        // Component Row
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(  // Removed const
-                              'Component: ',
-                              style: TextStyle(  // Removed const
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                                color: Colors.grey[700],
-                              ),
-                            ),
-                            Expanded(
-                              child: Text(
-                                recall['Component']?.toString() ?? '',
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Summary Section
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(  // Removed const
-                              'Summary',
-                              style: TextStyle(  // Removed const
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                                color: Colors.grey[700],
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              recall['Summary']?.toString() ?? '',
-                              style: const TextStyle(fontSize: 14),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-
-                        // Consequence Section
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(  // Removed const
-                              'Consequence',
-                              style: TextStyle(  // Removed const
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                                color: Colors.grey[700],
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(8.0),
-                              decoration: BoxDecoration(
-                                color: Colors.orange[50],
-                                borderRadius: BorderRadius.circular(4.0),
-                              ),
-                              child: Text(
-                                recall['Consequence']?.toString() ?? '',
-                                style: TextStyle(  // Removed const
-                                  fontSize: 14,
-                                  color: Colors.grey[800],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-
-                        // Remedy Section
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(  // Removed const
-                              'Remedy',
-                              style: TextStyle(  // Removed const
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                                color: Colors.grey[700],
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(8.0),
-                              decoration: BoxDecoration(
-                                color: Colors.green[50],
-                                borderRadius: BorderRadius.circular(4.0),
-                              ),
-                              child: Text(
-                                recall['Remedy']?.toString() ?? '',
-                                style: TextStyle(  // Removed const
-                                  fontSize: 14,
-                                  color: Colors.grey[800],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  border: Border.all(color: Colors.orange.shade200),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Card(
+                  elevation: 0,
+                  color: Colors.transparent,
+                  margin: EdgeInsets.zero,
+                  child: ListTile(
+                    leading: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade100,
+                        shape: BoxShape.circle,
+                      ),
+                      padding: const EdgeInsets.all(8),
+                      child: Icon(Icons.car_crash, color: Colors.orange.shade700, size: 24),
                     ),
+                    title: Text(
+                      'View Vehicle Recalls (${vehicleInfo.recalls.length})',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange.shade900,
+                      ),
+                    ),
+                    subtitle: Text(
+                      'Review safety recalls and campaigns',
+                      style: TextStyle(color: Colors.orange.shade800),
+                    ),
+                    trailing: const Icon(Icons.arrow_forward_ios),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => RecallsDashboardScreen(
+                            recalls: vehicleInfo.recalls,
+                            make: vehicleInfo.make,
+                            model: vehicleInfo.model,
+                            year: vehicleInfo.year,
+                          ),
+                        ),
+                      );
+                    },
                   ),
-                )).toList(),
+                ),
               ),
           ],
         ),
