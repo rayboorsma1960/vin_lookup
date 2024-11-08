@@ -24,6 +24,10 @@ dependencies:
   permission_handler: ^11.3.1
   connectivity_plus: ^6.1.0 # Replace with the latest version or desired version
   google_mlkit_text_recognition: ^0.14.0
+  ffmpeg_kit_flutter: ^6.0.3-LTS
+  video_player: ^2.6.0
+  path_provider: ^2.0.15
+  path: ^1.8.3
   camera: ^0.11.0+2
 
 flutter_icons:
@@ -33,7 +37,7 @@ flutter_icons:
   adaptive_icon_background: "#2196F3"
   adaptive_icon_foreground: "assets/icon/icon_foreground.png"
   remove_alpha_ios: false  # Not needed for Android
-  min_sdk_android: 21  # Android specific
+  min_sdk_android: 24  # Android specific
 
 dev_dependencies:
   flutter_test:

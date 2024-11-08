@@ -2,7 +2,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../services/vehicle_info_provider.dart';
 import '../../models/vehicle_info.dart';
 import '../../models/app_exceptions.dart';
@@ -10,6 +9,10 @@ import 'package:logging/logging.dart';
 import 'package:http/http.dart' as http;  // Add this line
 import '../complaints/complaints_dashboard_screen.dart';
 import '../recalls/recalls_dashboard_screen.dart';
+// Add these new imports at the top of vehicle_details_screen.dart
+import 'dart:io';
+import '../../services/video_converter_service.dart';
+import '../../services/video_player_screen.dart';
 
 
 // Add the StarRating widget here, BEFORE the VehicleDetailsScreen class:
@@ -215,29 +218,81 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
 
         return InkWell(
           onTap: () async {
-            final Uri uri = Uri.parse(url);
-            //_Log.info('Attempting to play video: $url');
+            final videoConverter = VideoConverterService();
 
             try {
-              if (await canLaunchUrl(uri)) {
-                final bool launched = await launchUrl(
-                    uri,
-                    mode: LaunchMode.externalApplication
-                );
-                if (!launched) {
-                  throw 'Failed to launch video player';
+              if (videoConverter.isWmvFormat(url)) {
+                _log.info('WMV format detected, starting conversion process');
+
+                // Show processing dialog
+                if (context.mounted) {
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (BuildContext context) {
+                      return const AlertDialog(
+                        content: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CircularProgressIndicator(),
+                            SizedBox(height: 16),
+                            Text('Processing video...')
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                }
+
+                final convertedPath = await videoConverter.downloadAndConvertVideo(url, context);
+
+                // Close processing dialog
+                if (context.mounted) {
+                  Navigator.pop(context); // Close the processing dialog
+                }
+
+                if (convertedPath != null && context.mounted) {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => VideoPlayerScreen(
+                        videoPath: convertedPath,
+                        isLocalFile: true,
+                      ),
+                    ),
+                  );
+
+                  // Cleanup converted file after viewing
+                  try {
+                    final convertedFile = File(convertedPath);
+                    if (await convertedFile.exists()) {
+                      await convertedFile.delete();
+                    }
+                  } catch (e) {
+                    _log.warning('Error cleaning up converted file: $e');
+                  }
                 }
               } else {
-                throw 'Video URL is not available';
+                _log.info('Non-WMV format detected, playing directly');
+                if (context.mounted) {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => VideoPlayerScreen(
+                        videoPath: url,
+                        isLocalFile: false,
+                      ),
+                    ),
+                  );
+                }
               }
             } catch (e) {
-              //_Log.severe('Error playing video: $e');
+              _log.severe('Error handling video: $e');
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Unable to play the crash test video'),
+                  SnackBar(
+                    content: Text('Error playing video: $e'),
                     behavior: SnackBarBehavior.floating,
-                    duration: Duration(seconds: 3),
                   ),
                 );
               }
