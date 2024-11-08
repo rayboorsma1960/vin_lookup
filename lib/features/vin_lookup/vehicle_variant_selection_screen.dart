@@ -24,6 +24,58 @@ class _VehicleVariantSelectionScreenState extends State<VehicleVariantSelectionS
     super.initState();
     _log.info('initState called');
     _provider = Provider.of<VehicleInfoProvider>(context, listen: false);
+
+    // Add automatic variant selection
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _autoSelectVariant();
+    });
+  }
+
+  // New method to handle automatic variant selection
+  Future<void> _autoSelectVariant() async {
+    if (_provider.vehicleVariants.length == 1) {
+      _log.info('Single variant found - auto-selecting');
+
+      setState(() {
+        _isLoading = true;
+      });
+
+      try {
+        await _provider.selectVariantAndFetchSafetyRatings(
+          _provider.vehicleVariants[0]['VehicleId'].toString(),
+        );
+
+        if (!mounted) return;
+
+        if (_provider.error != null) {
+          setState(() {
+            _errorMessage = _provider.getUserFriendlyError();
+          });
+        } else if (_provider.vehicleInfo?.safetyRatings.isNotEmpty == true) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const VehicleDetailsScreen(),
+            ),
+          );
+        } else {
+          setState(() {
+            _errorMessage = 'Safety ratings are not available for this variant.';
+          });
+        }
+      } catch (e) {
+        _log.severe('Error in autoSelectVariant: $e');
+        if (mounted) {
+          setState(() {
+            _errorMessage = 'Failed to load variant details. Please try again.';
+          });
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
+      }
+    }
   }
 
   @override
@@ -48,12 +100,6 @@ class _VehicleVariantSelectionScreenState extends State<VehicleVariantSelectionS
         ),
         body: Consumer<VehicleInfoProvider>(
           builder: (context, provider, child) {
-         /*   //_Log.info('Consumer builder called with:'
-                '\n - variants count: ${provider.vehicleVariants.length}'
-                '\n - isLoading: ${provider.isLoading}'
-                '\n - has error: ${provider.error != null}'
-                '\n - has vehicleInfo: ${provider.vehicleInfo != null}'); */
-
             if (_isLoading || provider.isLoading) {
               return _buildLoadingState();
             }
@@ -278,7 +324,7 @@ class _VehicleVariantSelectionScreenState extends State<VehicleVariantSelectionS
     });
 
     try {
-      //_Log.info('Selecting variant: ${variant['VehicleId']}');
+      _log.info('Selecting variant: ${variant['VehicleId']}');
 
       await _provider.selectVariantAndFetchSafetyRatings(
         variant['VehicleId'].toString(),
@@ -303,7 +349,7 @@ class _VehicleVariantSelectionScreenState extends State<VehicleVariantSelectionS
         });
       }
     } catch (e) {
-      //_Log.severe('Error in handleVariantSelection: $e');
+      _log.severe('Error in handleVariantSelection: $e');
       if (mounted) {
         setState(() {
           _errorMessage = 'Failed to load variant details. Please try again.';
@@ -314,5 +360,10 @@ class _VehicleVariantSelectionScreenState extends State<VehicleVariantSelectionS
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
   }
 }
