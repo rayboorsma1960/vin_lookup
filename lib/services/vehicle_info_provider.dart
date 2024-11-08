@@ -71,7 +71,7 @@ class VehicleInfoProvider with ChangeNotifier {
     try {
       await _errorHandler.withRetry(
         operation: () async {
-          // First fetch basic vehicle info
+          // First fetch basic vehicle info (which already includes recalls)
           _vehicleInfo = await _nhtsaService.getVehicleInfo(vin);
 
           if (_vehicleInfo != null) {
@@ -86,12 +86,6 @@ class VehicleInfoProvider with ChangeNotifier {
                 timeout: const Duration(seconds: 10),
                 onTimeout: () => 'https://via.placeholder.com/300x200?text=Vehicle+Image',
               ),
-              // Fetch recalls
-              _nhtsaService.getRecalls(
-                _vehicleInfo!.make,
-                _vehicleInfo!.model,
-                _vehicleInfo!.year.toString(),
-              ),
               // Fetch vehicle variants
               _nhtsaService.getVehicleVariants(
                 _vehicleInfo!.year.toString(),
@@ -102,12 +96,10 @@ class VehicleInfoProvider with ChangeNotifier {
 
             // Update vehicle info with all fetched data
             final imageUrl = futures[0] as String;
-            final recalls = futures[1] as List<Map<String, dynamic>>;
-            _vehicleVariants = futures[2] as List<Map<String, dynamic>>;
+            _vehicleVariants = futures[1] as List<Map<String, dynamic>>;
 
             _vehicleInfo = _vehicleInfo!.copyWith(
               imageUrl: imageUrl,
-              recalls: recalls,
               complaints: [], // Initialize with empty list since we're handling complaints separately
             );
 
