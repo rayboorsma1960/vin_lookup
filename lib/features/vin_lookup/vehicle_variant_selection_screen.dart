@@ -227,6 +227,7 @@ class _VehicleVariantSelectionScreenState extends State<VehicleVariantSelectionS
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Vehicle Basic Info Card
           Card(
             elevation: 0,
             color: Colors.blue.shade50,
@@ -242,7 +243,86 @@ class _VehicleVariantSelectionScreenState extends State<VehicleVariantSelectionS
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
+
+                  // Vehicle Specifications with clear labels
+                  Row(
+                    children: [
+                      if (vehicleInfo.doors > 0) ...[
+                        Row(
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Door icon and label
+                                Row(
+                                  children: [
+                                    Icon(Icons.door_front_door,
+                                        size: 14,
+                                        color: Colors.grey[600]
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Doors',
+                                      style: TextStyle(
+                                        color: Colors.grey[600],
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                // Door count
+                                Text(
+                                  '${vehicleInfo.doors}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(width: 24),
+                          ],
+                        ),
+                      ],
+                      if (vehicleInfo.driveType.isNotEmpty &&
+                          vehicleInfo.driveType.toLowerCase() != 'n/a') ...[
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Drive type icon and label
+                            Row(
+                              children: [
+                                Icon(Icons.settings_input_component,
+                                    size: 14,
+                                    color: Colors.grey[600]
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Drive',
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            // Drive type value
+                            Text(
+                              vehicleInfo.driveType,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w500,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 16),
                   const Text(
                     'Select your specific vehicle variant to view detailed information and safety ratings:',
                     style: TextStyle(fontSize: 16),
@@ -252,6 +332,8 @@ class _VehicleVariantSelectionScreenState extends State<VehicleVariantSelectionS
             ),
           ),
           const SizedBox(height: 16),
+
+          // Rest of the variants list remains the same
           Expanded(
             child: ListView.builder(
               itemCount: provider.vehicleVariants.length,
@@ -262,7 +344,7 @@ class _VehicleVariantSelectionScreenState extends State<VehicleVariantSelectionS
                   child: ListTile(
                     contentPadding: const EdgeInsets.all(16),
                     title: Text(
-                      variant['VehicleDescription'] ?? 'Unknown Variant',
+                      variant['Description'] ?? variant['VehicleDescription'] ?? 'Unknown Variant',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
