@@ -30,21 +30,43 @@ class VideoConverterService {
       final wmvFile = File('${appDir.path}/temp_$timestamp.wmv');
       final mp4File = File('${appDir.path}/converted_$timestamp.mp4');
 
-      // Download the WMV file
+      // Download the WMV file with size verification
       _log.info('Downloading video from: $url');
       final response = await http.get(Uri.parse(url));
+
       if (response.statusCode != 200) {
         throw Exception('Failed to download video: ${response.statusCode}');
       }
 
-      _log.info('Writing WMV file to: ${wmvFile.path}');
+      // Check if the file is empty
+      if (response.contentLength == null || response.contentLength == 0) {
+        _log.warning('Empty video file received from URL: $url');
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Crash test video is not available for this vehicle'),
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+        return null;
+      }
+
+      _log.info('Writing WMV file (${response.contentLength} bytes) to: ${wmvFile.path}');
       await wmvFile.writeAsBytes(response.bodyBytes);
 
       if (!await wmvFile.exists()) {
         throw Exception('Failed to write WMV file');
       }
 
-      // Convert WMV to MP4 using FFmpeg with h264_mediacodec encoder
+      // Verify the downloaded file size
+      final downloadedSize = await wmvFile.length();
+      if (downloadedSize == 0) {
+        await wmvFile.delete();
+        throw Exception('Downloaded video file is empty');
+      }
+
+      // Convert WMV to MP4 using FFmpeg
       _log.info('Starting FFmpeg conversion');
       final session = await FFmpegKit.execute(
           '-i "${wmvFile.path}" -c:v mpeg4 -c:a aac "${mp4File.path}"'
@@ -87,7 +109,11 @@ class VideoConverterService {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error processing video: $e'),
+            content: Text(
+                e.toString().contains('empty')
+                    ? 'Crash test video is not available for this vehicle'
+                    : 'Error processing video: $e'
+            ),
             duration: const Duration(seconds: 5),
           ),
         );
