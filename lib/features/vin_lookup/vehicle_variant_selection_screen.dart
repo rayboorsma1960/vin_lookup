@@ -31,7 +31,6 @@ class _VehicleVariantSelectionScreenState extends State<VehicleVariantSelectionS
     });
   }
 
-  // New method to handle automatic variant selection
   Future<void> _autoSelectVariant() async {
     if (_provider.vehicleVariants.length == 1) {
       _log.info('Single variant found - auto-selecting');
@@ -74,6 +73,51 @@ class _VehicleVariantSelectionScreenState extends State<VehicleVariantSelectionS
         if (mounted) {
           setState(() => _isLoading = false);
         }
+      }
+    }
+  }
+
+  Future<void> _handleVariantSelection(Map<String, dynamic> variant) async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      _log.info('Selecting variant: ${variant['VehicleId']}');
+
+      await _provider.selectVariantAndFetchSafetyRatings(
+        variant['VehicleId'].toString(),
+      );
+
+      if (!mounted) return;
+
+      if (_provider.error != null) {
+        setState(() {
+          _errorMessage = _provider.getUserFriendlyError();
+        });
+      } else if (_provider.vehicleInfo?.safetyRatings.isNotEmpty == true) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const VehicleDetailsScreen(),
+          ),
+        );
+      } else {
+        setState(() {
+          _errorMessage = 'Safety ratings are not available for this variant.';
+        });
+      }
+    } catch (e) {
+      _log.severe('Error in handleVariantSelection: $e');
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Failed to load variant details. Please try again.';
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
       }
     }
   }
@@ -333,7 +377,7 @@ class _VehicleVariantSelectionScreenState extends State<VehicleVariantSelectionS
           ),
           const SizedBox(height: 16),
 
-          // Rest of the variants list remains the same
+          // Variants list
           Expanded(
             child: ListView.builder(
               itemCount: provider.vehicleVariants.length,
@@ -397,51 +441,6 @@ class _VehicleVariantSelectionScreenState extends State<VehicleVariantSelectionS
         ],
       ),
     );
-  }
-
-  Future<void> _handleVariantSelection(Map<String, dynamic> variant) async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      _log.info('Selecting variant: ${variant['VehicleId']}');
-
-      await _provider.selectVariantAndFetchSafetyRatings(
-        variant['VehicleId'].toString(),
-      );
-
-      if (!mounted) return;
-
-      if (_provider.error != null) {
-        setState(() {
-          _errorMessage = _provider.getUserFriendlyError();
-        });
-      } else if (_provider.vehicleInfo?.safetyRatings.isNotEmpty == true) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const VehicleDetailsScreen(),
-          ),
-        );
-      } else {
-        setState(() {
-          _errorMessage = 'Safety ratings are not available for this variant.';
-        });
-      }
-    } catch (e) {
-      _log.severe('Error in handleVariantSelection: $e');
-      if (mounted) {
-        setState(() {
-          _errorMessage = 'Failed to load variant details. Please try again.';
-        });
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
   }
 
   @override
