@@ -1,4 +1,4 @@
-package com.trb.vin_information
+package com.trb2.vin_information
 
 import io.flutter.embedding.android.FlutterActivity
 
