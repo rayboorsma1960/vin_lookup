@@ -28,7 +28,7 @@ if (flutterVersionName == null) {
 }
 
 android {
-    namespace "com.example.vin_information"
+    namespace "com.trb.vin_information"
     compileSdkVersion flutter.compileSdkVersion
 
     compileOptions {
@@ -49,7 +49,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.example.vin_information"
+        applicationId "com.trb.vin_information"
         minSdkVersion 24
         targetSdkVersion flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
