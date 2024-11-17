@@ -796,14 +796,14 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
                     child: Icon(Icons.report_problem, color: Colors.red.shade700, size: 24),
                   ),
                   title: Text(
-                    'View Vehicle Complaints',
+                    'View Complaints Dashboard',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: Colors.red.shade900,
                     ),
                   ),
                   subtitle: Text(
-                    'Review reported issues and safety concerns',
+                    'Review reported complaints insights',
                     style: TextStyle(color: Colors.red.shade800),
                   ),
                   trailing: const Icon(Icons.arrow_forward_ios),
