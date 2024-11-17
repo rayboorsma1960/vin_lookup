@@ -25,7 +25,6 @@ class _VehicleVariantSelectionScreenState extends State<VehicleVariantSelectionS
     _log.info('initState called');
     _provider = Provider.of<VehicleInfoProvider>(context, listen: false);
 
-    // Add automatic variant selection
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _autoSelectVariant();
     });
@@ -271,7 +270,6 @@ class _VehicleVariantSelectionScreenState extends State<VehicleVariantSelectionS
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Vehicle Basic Info Card
           Card(
             elevation: 0,
             color: Colors.blue.shade50,
@@ -283,93 +281,94 @@ class _VehicleVariantSelectionScreenState extends State<VehicleVariantSelectionS
                   Text(
                     '${vehicleInfo.year} ${vehicleInfo.make} ${vehicleInfo.model}',
                     style: const TextStyle(
-                      fontSize: 20,
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 20),
 
-                  // Vehicle Specifications with clear labels
-                  Row(
-                    children: [
-                      if (vehicleInfo.doors > 0) ...[
-                        Row(
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                  // Enhanced Vehicle Specifications Card
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.blue.shade200, width: 2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.blue.shade100.withOpacity(0.3),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        // Doors info
+                        if (vehicleInfo.doors > 0)
+                          Expanded(
+                            child: Column(
                               children: [
-                                // Door icon and label
-                                Row(
-                                  children: [
-                                    Icon(Icons.door_front_door,
-                                        size: 14,
-                                        color: Colors.grey[600]
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'Doors',
-                                      style: TextStyle(
-                                        color: Colors.grey[600],
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 4),
-                                // Door count
+                                Icon(Icons.door_front_door,
+                                    size: 32,
+                                    color: Colors.blue.shade700),
+                                const SizedBox(height: 8),
                                 Text(
-                                  '${vehicleInfo.doors}',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 14,
+                                  '${vehicleInfo.doors} Doors',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.blue.shade700,
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox(width: 24),
-                          ],
-                        ),
-                      ],
-                      if (vehicleInfo.driveType.isNotEmpty &&
-                          vehicleInfo.driveType.toLowerCase() != 'n/a') ...[
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Drive type icon and label
-                            Row(
+                          ),
+
+                        // Vertical divider
+                        if (vehicleInfo.doors > 0 &&
+                            vehicleInfo.driveType.isNotEmpty &&
+                            vehicleInfo.driveType.toLowerCase() != 'n/a')
+                          Container(
+                            height: 50,
+                            width: 2,
+                            margin: const EdgeInsets.symmetric(horizontal: 16),
+                            color: Colors.blue.shade100,
+                          ),
+
+                        // Drive type info
+                        if (vehicleInfo.driveType.isNotEmpty &&
+                            vehicleInfo.driveType.toLowerCase() != 'n/a')
+                          Expanded(
+                            child: Column(
                               children: [
                                 Icon(Icons.settings_input_component,
-                                    size: 14,
-                                    color: Colors.grey[600]
-                                ),
-                                const SizedBox(width: 4),
+                                    size: 32,
+                                    color: Colors.blue.shade700),
+                                const SizedBox(height: 8),
                                 Text(
-                                  'Drive',
+                                  vehicleInfo.driveType,
                                   style: TextStyle(
-                                    color: Colors.grey[600],
-                                    fontSize: 12,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.blue.shade700,
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 4),
-                            // Drive type value
-                            Text(
-                              vehicleInfo.driveType,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w500,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
                       ],
-                    ],
+                    ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
+
                   const Text(
                     'Select your specific vehicle variant to view detailed information and safety ratings:',
-                    style: TextStyle(fontSize: 16),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ],
               ),
