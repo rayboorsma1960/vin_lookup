@@ -135,6 +135,7 @@ class VehicleInfoProvider with ChangeNotifier {
     _setLoadingState(true);
     _error = null;
 
+    // In selectVariantAndFetchSafetyRatings
     try {
       await _errorHandler.withRetry(
         operation: () async {
@@ -147,11 +148,17 @@ class VehicleInfoProvider with ChangeNotifier {
           );
 
           final safetyRatings = await _nhtsaService.getSafetyRatings(vehicleId);
+          final complaintCount = int.tryParse(safetyRatings['ComplaintsCount']?.toString() ?? '0') ?? 0;
 
           _vehicleInfo = _vehicleInfo?.copyWith(
             trim: selectedVariant['Trim'] ?? _vehicleInfo?.trim ?? 'N/A',
             bodyClass: selectedVariant['BodyStyle'] ?? _vehicleInfo?.bodyClass ?? 'N/A',
             safetyRatings: safetyRatings,
+            complaints: List<Map<String, dynamic>>.filled(
+                complaintCount,
+                {'id': 0},
+                growable: true
+            ),
           );
         },
         maxAttempts: 2,

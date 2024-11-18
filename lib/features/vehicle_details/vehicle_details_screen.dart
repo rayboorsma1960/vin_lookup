@@ -287,7 +287,7 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
                 }
               }
             } catch (e) {
-              _log.severe('Error handling video: $e');
+             // _log.severe('Error handling video: $e');
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -778,47 +778,177 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.red.shade50,
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [Colors.red.shade50, Colors.orange.shade50],
+                ),
                 border: Border.all(color: Colors.red.shade200),
                 borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    spreadRadius: 1,
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: Card(
                 elevation: 0,
                 color: Colors.transparent,
                 margin: EdgeInsets.zero,
-                child: ListTile(
-                  leading: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.red.shade100,
-                      shape: BoxShape.circle,
-                    ),
-                    padding: const EdgeInsets.all(8),
-                    child: Icon(Icons.report_problem, color: Colors.red.shade700, size: 24),
-                  ),
-                  title: Text(
-                    'View Complaints Dashboard',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.red.shade900,
-                    ),
-                  ),
-                  subtitle: Text(
-                    'Review reported complaints insights',
-                    style: TextStyle(color: Colors.red.shade800),
-                  ),
-                  trailing: const Icon(Icons.arrow_forward_ios),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ComplaintsDashboardScreen(
-                          make: vehicleInfo.make,
-                          model: vehicleInfo.model,
-                          year: vehicleInfo.year,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Wrapping header row in Expanded
+                      Row(
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.red.shade100,
+                              shape: BoxShape.circle,
+                            ),
+                            padding: const EdgeInsets.all(8),
+                            child: Icon(Icons.warning_amber_rounded,
+                                color: Colors.red.shade700,
+                                size: 24
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    'Vehicle Complaints Dashboard',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                      color: Colors.red.shade900,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red.shade100,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    '${vehicleInfo.complaints.length} Complaints',
+                                    style: TextStyle(
+                                      color: Colors.red.shade700,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      // Feature highlights with Flexible
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Row(
+                              children: [
+                                Icon(Icons.trending_up,
+                                    size: 16,
+                                    color: Colors.red.shade600
+                                ),
+                                const SizedBox(width: 4),
+                                Flexible(
+                                  child: Text(
+                                    'Trend Analysis',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.red.shade800,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Flexible(
+                            child: Row(
+                              children: [
+                                Icon(Icons.message_outlined,
+                                    size: 16,
+                                    color: Colors.red.shade600
+                                ),
+                                const SizedBox(width: 4),
+                                Flexible(
+                                  child: Text(
+                                    'Detailed Reports',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.red.shade800,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Access comprehensive complaint insights, safety analysis, and reported issues to make informed decisions about your vehicle.',
+                        style: TextStyle(
+                          color: Colors.red.shade700,
+                          fontSize: 13,
                         ),
                       ),
-                    );
-                  },
+                      const SizedBox(height: 8),
+                      InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ComplaintsDashboardScreen(
+                                make: vehicleInfo.make,
+                                model: vehicleInfo.model,
+                                year: vehicleInfo.year,
+                              ),
+                            ),
+                          );
+                        },
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Text(
+                              'View Dashboard',
+                              style: TextStyle(
+                                color: Colors.red.shade700,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              Icons.arrow_forward_ios,
+                              size: 16,
+                              color: Colors.red.shade700,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
