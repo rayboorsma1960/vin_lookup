@@ -4,13 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
-import 'package:barcode_scan2/barcode_scan2.dart';
 import '../../services/vehicle_info_provider.dart';
 import '../../services/vin_validator.dart';
 import 'vehicle_variant_selection_screen.dart';
 import '../../features/feedback/feedback_screen.dart';
 import '../vehicle_details/vehicle_details_screen.dart';
 import 'vin_image_scanner.dart';
+import 'vin_barcode_scanner.dart';
 import 'package:logging/logging.dart';
 import 'package:flutter/services.dart' show PlatformException;
 
@@ -362,24 +362,11 @@ class _VinInputScreenState extends State<VinInputScreen> {
         _errorMessage = null;
       });
 
-      var scanResult = await BarcodeScanner.scan(
-        options: ScanOptions(
-          strings: {
-            'cancel': 'Cancel',
-            'flash_on': 'Flash on',
-            'flash_off': 'Flash off',
-          },
-          restrictFormat: [BarcodeFormat.code39, BarcodeFormat.pdf417],
-          useCamera: -1, // Use back camera
-          autoEnableFlash: false,
-        ),
-      );
+      // Use the new VinBarcodeScanner with mobile_scanner
+      String? scannedText = await VinBarcodeScanner.scanBarcode();
 
-      //_log.info('Scan result type: ${scanResult.type}');
-      //_log.info('Scanned barcode: ${scanResult.rawContent}');
-
-      if (scanResult.type == ResultType.Barcode && scanResult.rawContent.isNotEmpty) {
-        String scannedText = scanResult.rawContent.trim().toUpperCase();
+      if (scannedText != null && scannedText.isNotEmpty) {
+        scannedText = scannedText.trim().toUpperCase();
 
         // Method 1: First 17 characters
         if (scannedText.length >= 17) {
@@ -388,7 +375,7 @@ class _VinInputScreenState extends State<VinInputScreen> {
             setState(() {
               _vinController.text = potentialVin;
               _errorMessage = null;
-              _formKey.currentState?.validate();  // Add this line
+              _formKey.currentState?.validate();
             });
             return;
           }
@@ -420,9 +407,11 @@ class _VinInputScreenState extends State<VinInputScreen> {
                 'Please try scanning again or enter the VIN manually.',
           );
         }
+      } else if (scannedText == null) {
+        // User cancelled scanning
+        // Don't show error message for cancellation
       }
     } on PlatformException catch (e) {
-      //_log.severe('Platform error while scanning: $e');
       if (e.code == 'PERMISSION_NOT_GRANTED') {
         _showErrorDialog(
           'Camera permission was denied.\n\n'
@@ -435,7 +424,6 @@ class _VinInputScreenState extends State<VinInputScreen> {
         );
       }
     } catch (e) {
-      //_log.severe('Error scanning VIN barcode: $e');
       _showErrorDialog(
         'Error scanning barcode: ${e.toString()}\n'
             'Please try again or enter the VIN manually.',
@@ -446,7 +434,6 @@ class _VinInputScreenState extends State<VinInputScreen> {
       }
     }
   }
-
   Future<void> _submitVin() async {
     if (_formKey.currentState!.validate()) {
       setState(() {

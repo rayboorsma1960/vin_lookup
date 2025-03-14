@@ -9,10 +9,10 @@ import 'package:logging/logging.dart';
 import 'package:http/http.dart' as http;  // Add this line
 import '../complaints/complaints_dashboard_screen.dart';
 import '../recalls/recalls_dashboard_screen.dart';
-// Add these new imports at the top of vehicle_details_screen.dart
-import 'dart:io';
-import '../../services/video_converter_service.dart';
-import '../../services/video_player_screen.dart';
+// You can remove these imports since we're disabling video playback
+// import 'dart:io';
+// import '../../services/video_converter_service.dart';
+// import '../../services/video_player_screen.dart';
 
 
 // Add the StarRating widget here, BEFORE the VehicleDetailsScreen class:
@@ -206,118 +206,31 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
     }
   }
 
+  // Updated method to disable video playback
   Widget _buildVideoLink(String label, String? url) {
     if (url == null || url.isEmpty) return const SizedBox.shrink();
 
-    return FutureBuilder<bool>(
-      future: _isVideoAvailable(url),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData || snapshot.data == false) {
-          return const SizedBox.shrink();
-        }
-
-        return InkWell(
-          onTap: () async {
-            final videoConverter = VideoConverterService();
-
-            try {
-              if (videoConverter.isWmvFormat(url)) {
-                _log.info('WMV format detected, starting conversion process');
-
-                // Show processing dialog
-                if (context.mounted) {
-                  showDialog(
-                    context: context,
-                    barrierDismissible: false,
-                    builder: (BuildContext context) {
-                      return const AlertDialog(
-                        content: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            CircularProgressIndicator(),
-                            SizedBox(height: 16),
-                            Text('Processing video...')
-                          ],
-                        ),
-                      );
-                    },
-                  );
-                }
-
-                final convertedPath = await videoConverter.downloadAndConvertVideo(url, context);
-
-                // Close processing dialog
-                if (context.mounted) {
-                  Navigator.pop(context); // Close the processing dialog
-                }
-
-                if (convertedPath != null && context.mounted) {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => VideoPlayerScreen(
-                        videoPath: convertedPath,
-                        isLocalFile: true,
-                      ),
-                    ),
-                  );
-
-                  // Cleanup converted file after viewing
-                  try {
-                    final convertedFile = File(convertedPath);
-                    if (await convertedFile.exists()) {
-                      await convertedFile.delete();
-                    }
-                  } catch (e) {
-                    _log.warning('Error cleaning up converted file: $e');
-                  }
-                }
-              } else {
-                _log.info('Non-WMV format detected, playing directly');
-                if (context.mounted) {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => VideoPlayerScreen(
-                        videoPath: url,
-                        isLocalFile: false,
-                      ),
-                    ),
-                  );
-                }
-              }
-            } catch (e) {
-             // _log.severe('Error handling video: $e');
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Error playing video: $e'),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              }
-            }
-          },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4.0),
-            child: Row(
-              children: [
-                const Icon(Icons.play_circle_outline, color: Colors.blue),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    label,
-                    style: const TextStyle(
-                      color: Colors.blue,
-                      decoration: TextDecoration.underline,
-                    ),
-                  ),
-                ),
-              ],
+    // Instead of making the link clickable, just show it as disabled text
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        children: [
+          Icon(
+            Icons.videocam_off, // Changed to "video off" icon
+            color: Colors.grey,  // Grey color indicates disabled
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              "$label (Video playback temporarily unavailable)",
+              style: const TextStyle(
+                color: Colors.grey,  // Grey text for disabled state
+              ),
             ),
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 
@@ -349,15 +262,15 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
   }
   Widget _buildContent(VehicleInfo vehicleInfo) {
     return RefreshIndicator(
-      onRefresh: _handleRefresh,
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Basic Vehicle Information
-            _buildInfoSection('Vehicle Information', [
+        onRefresh: _handleRefresh,
+        child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                // Basic Vehicle Information
+                _buildInfoSection('Vehicle Information', [
               _buildInfoTile('VIN', vehicleInfo.vin),
               _buildInfoTile('Year', vehicleInfo.year.toString()),
               _buildInfoTile('Make', vehicleInfo.make),
@@ -572,439 +485,439 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
             // Safety Ratings with Images
             // Safety Ratings
             if (vehicleInfo.safetyRatings.isNotEmpty)
-              _buildInfoSection('Safety Ratings', [
-                // Rating Information
-                ...vehicleInfo.safetyRatings.entries
-                    .where((entry) =>
-                entry.value != null &&
-                    entry.value.toString().isNotEmpty &&
-                    !entry.key.contains('Picture') &&
-                    !entry.key.contains('Video')) // Exclude picture and video URLs from text display
-                    .map((entry) => _buildInfoTile(
-                    entry.key.replaceAllMapped(
-                        RegExp(r'([A-Z])'),
-                            (match) => ' ${match.group(1)}'
-                    ).trim(),
-                    entry.value.toString()
-                )),
+        _buildInfoSection('Safety Ratings', [
+      // Rating Information
+      ...vehicleInfo.safetyRatings.entries
+          .where((entry) =>
+      entry.value != null &&
+          entry.value.toString().isNotEmpty &&
+          !entry.key.contains('Picture') &&
+          !entry.key.contains('Video')) // Exclude picture and video URLs from text display
+          .map((entry) => _buildInfoTile(
+          entry.key.replaceAllMapped(
+              RegExp(r'([A-Z])'),
+                  (match) => ' ${match.group(1)}'
+          ).trim(),
+          entry.value.toString()
+      )),
 
-                // Video Links
-                if (vehicleInfo.safetyRatings['FrontCrashVideo'] != null)
-                  _buildVideoLink(
-                    'Watch Front Crash Test Video',
-                    vehicleInfo.safetyRatings['FrontCrashVideo'],
-                  ),
-                if (vehicleInfo.safetyRatings['SideCrashVideo'] != null)
-                  _buildVideoLink(
-                    'Watch Side Crash Test Video',
-                    vehicleInfo.safetyRatings['SideCrashVideo'],
-                  ),
+      // Video Links - these are now disabled
+      if (vehicleInfo.safetyRatings['FrontCrashVideo'] != null)
+        _buildVideoLink(
+          'Watch Front Crash Test Video',
+          vehicleInfo.safetyRatings['FrontCrashVideo'],
+        ),
+      if (vehicleInfo.safetyRatings['SideCrashVideo'] != null)
+        _buildVideoLink(
+          'Watch Side Crash Test Video',
+          vehicleInfo.safetyRatings['SideCrashVideo'],
+        ),
 
-                // Crash Test Images
-                const SizedBox(height: 16),
-                if (vehicleInfo.safetyRatings['FrontCrashPicture'] != null ||
-                    vehicleInfo.safetyRatings['SideCrashPicture'] != null)
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Crash Test Images',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          if (vehicleInfo.safetyRatings['FrontCrashPicture'] != null)
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Front Crash Test',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Image.network(
-                                      vehicleInfo.safetyRatings['FrontCrashPicture']!,
-                                      height: 150,
-                                      width: double.infinity,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) {
-                                        //_Log.warning('Failed to load front crash image: $error');
-                                        return Container(
-                                          height: 150,
-                                          width: double.infinity,
-                                          decoration: BoxDecoration(
-                                            color: Colors.grey[200],
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                          child: Column(
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            children: [
-                                              Icon(
-                                                Icons.broken_image,
-                                                size: 32,
-                                                color: Colors.grey[400],
-                                              ),
-                                              const SizedBox(height: 8),
-                                              Text(
-                                                'Image not available',
-                                                style: TextStyle(
-                                                  color: Colors.grey[600],
-                                                  fontSize: 12,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        );
-                                      },
-                                      loadingBuilder: (context, child, loadingProgress) {
-                                        if (loadingProgress == null) return child;
-                                        return Container(
-                                          height: 150,
-                                          width: double.infinity,
-                                          decoration: BoxDecoration(
-                                            color: Colors.grey[200],
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                          child: Center(
-                                            child: CircularProgressIndicator(
-                                              value: loadingProgress.expectedTotalBytes != null
-                                                  ? loadingProgress.cumulativeBytesLoaded /
-                                                  loadingProgress.expectedTotalBytes!
-                                                  : null,
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                          if (vehicleInfo.safetyRatings['FrontCrashPicture'] != null &&
-                              vehicleInfo.safetyRatings['SideCrashPicture'] != null)
-                            const SizedBox(width: 12),
-
-                          if (vehicleInfo.safetyRatings['SideCrashPicture'] != null)
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Side Crash Test',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Image.network(
-                                      vehicleInfo.safetyRatings['SideCrashPicture']!,
-                                      height: 150,
-                                      width: double.infinity,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) {
-                                        //_Log.warning('Failed to load side crash image: $error');
-                                        return Container(
-                                          height: 150,
-                                          width: double.infinity,
-                                          decoration: BoxDecoration(
-                                            color: Colors.grey[200],
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                          child: Column(
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            children: [
-                                              Icon(
-                                                Icons.broken_image,
-                                                size: 32,
-                                                color: Colors.grey[400],
-                                              ),
-                                              const SizedBox(height: 8),
-                                              Text(
-                                                'Image not available',
-                                                style: TextStyle(
-                                                  color: Colors.grey[600],
-                                                  fontSize: 12,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        );
-                                      },
-                                      loadingBuilder: (context, child, loadingProgress) {
-                                        if (loadingProgress == null) return child;
-                                        return Container(
-                                          height: 150,
-                                          width: double.infinity,
-                                          decoration: BoxDecoration(
-                                            color: Colors.grey[200],
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                          child: Center(
-                                            child: CircularProgressIndicator(
-                                              value: loadingProgress.expectedTotalBytes != null
-                                                  ? loadingProgress.cumulativeBytesLoaded /
-                                                  loadingProgress.expectedTotalBytes!
-                                                  : null,
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                        ],
-                      ),
-                    ],
-                  ),
-              ]),
-
-            // In the _buildContent method of vehicle_details_screen.dart
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  colors: [Colors.red.shade50, Colors.orange.shade50],
-                ),
-                border: Border.all(color: Colors.red.shade200),
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
-                    spreadRadius: 1,
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Card(
-                elevation: 0,
-                color: Colors.transparent,
-                margin: EdgeInsets.zero,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Wrapping header row in Expanded
-                      Row(
-                        children: [
-                          Container(
-                            decoration: BoxDecoration(
-                              color: Colors.red.shade100,
-                              shape: BoxShape.circle,
-                            ),
-                            padding: const EdgeInsets.all(8),
-                            child: Icon(Icons.warning_amber_rounded,
-                                color: Colors.red.shade700,
-                                size: 24
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                    'Vehicle Complaints Dashboard',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                      color: Colors.red.shade900,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.red.shade100,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    '${vehicleInfo.complaints.length} Complaints',
-                                    style: TextStyle(
-                                      color: Colors.red.shade700,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      // Feature highlights with Flexible
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Row(
-                              children: [
-                                Icon(Icons.trending_up,
-                                    size: 16,
-                                    color: Colors.red.shade600
-                                ),
-                                const SizedBox(width: 4),
-                                Flexible(
-                                  child: Text(
-                                    'Trend Analysis',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: Colors.red.shade800,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Flexible(
-                            child: Row(
-                              children: [
-                                Icon(Icons.message_outlined,
-                                    size: 16,
-                                    color: Colors.red.shade600
-                                ),
-                                const SizedBox(width: 4),
-                                Flexible(
-                                  child: Text(
-                                    'Detailed Reports',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: Colors.red.shade800,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Access comprehensive complaint insights, safety analysis, and reported issues to make informed decisions about your vehicle.',
-                        style: TextStyle(
-                          color: Colors.red.shade700,
-                          fontSize: 13,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      InkWell(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => ComplaintsDashboardScreen(
-                                make: vehicleInfo.make,
-                                model: vehicleInfo.model,
-                                year: vehicleInfo.year,
-                              ),
-                            ),
-                          );
-                        },
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            Text(
-                              'View Dashboard',
-                              style: TextStyle(
-                                color: Colors.red.shade700,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Icon(
-                              Icons.arrow_forward_ios,
-                              size: 16,
-                              color: Colors.red.shade700,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+      // Crash Test Images
+      const SizedBox(height: 16),
+      if (vehicleInfo.safetyRatings['FrontCrashPicture'] != null ||
+          vehicleInfo.safetyRatings['SideCrashPicture'] != null)
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Crash Test Images',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
               ),
             ),
-
-            if (vehicleInfo.recalls.isNotEmpty)
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.orange.shade50,
-                  border: Border.all(color: Colors.orange.shade200),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Card(
-                  elevation: 0,
-                  color: Colors.transparent,
-                  margin: EdgeInsets.zero,
-                  child: ListTile(
-                    leading: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.orange.shade100,
-                        shape: BoxShape.circle,
-                      ),
-                      padding: const EdgeInsets.all(8),
-                      child: Icon(Icons.car_crash, color: Colors.orange.shade700, size: 24),
-                    ),
-                    title: Text(
-                      'View Vehicle Recalls (${vehicleInfo.recalls.length})',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.orange.shade900,
-                      ),
-                    ),
-                    subtitle: Text(
-                      'Review safety recalls and campaigns',
-                      style: TextStyle(color: Colors.orange.shade800),
-                    ),
-                    trailing: const Icon(Icons.arrow_forward_ios),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => RecallsDashboardScreen(
-                            recalls: vehicleInfo.recalls,
-                            make: vehicleInfo.make,
-                            model: vehicleInfo.model,
-                            year: vehicleInfo.year,
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                if (vehicleInfo.safetyRatings['FrontCrashPicture'] != null)
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Front Crash Test',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
-                      );
-                    },
+                        const SizedBox(height: 8),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            vehicleInfo.safetyRatings['FrontCrashPicture']!,
+                            height: 150,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              //_Log.warning('Failed to load front crash image: $error');
+                              return Container(
+                                height: 150,
+                                width: double.infinity,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[200],
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.broken_image,
+                                      size: 32,
+                                      color: Colors.grey[400],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Image not available',
+                                      style: TextStyle(
+                                        color: Colors.grey[600],
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Container(
+                                height: 150,
+                                width: double.infinity,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[200],
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    value: loadingProgress.expectedTotalBytes != null
+                                        ? loadingProgress.cumulativeBytesLoaded /
+                                        loadingProgress.expectedTotalBytes!
+                                        : null,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
+
+                if (vehicleInfo.safetyRatings['FrontCrashPicture'] != null &&
+                    vehicleInfo.safetyRatings['SideCrashPicture'] != null)
+                  const SizedBox(width: 12),
+
+                if (vehicleInfo.safetyRatings['SideCrashPicture'] != null)
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Side Crash Test',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            vehicleInfo.safetyRatings['SideCrashPicture']!,
+                            height: 150,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              //_Log.warning('Failed to load side crash image: $error');
+                              return Container(
+                                height: 150,
+                                width: double.infinity,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[200],
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.broken_image,
+                                      size: 32,
+                                      color: Colors.grey[400],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Image not available',
+                                      style: TextStyle(
+                                        color: Colors.grey[600],
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Container(
+                                height: 150,
+                                width: double.infinity,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[200],
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    value: loadingProgress.expectedTotalBytes != null
+                                        ? loadingProgress.cumulativeBytesLoaded /
+                                        loadingProgress.expectedTotalBytes!
+                                        : null,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+    ]),
+
+    // In the _buildContent method of vehicle_details_screen.dart
+    Container(
+    margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+    decoration: BoxDecoration(
+    gradient: LinearGradient(
+    begin: Alignment.centerLeft,
+    end: Alignment.centerRight,
+    colors: [Colors.red.shade50, Colors.orange.shade50],
+    ),
+    border: Border.all(color: Colors.red.shade200),
+    borderRadius: BorderRadius.circular(12),
+    boxShadow: [
+    BoxShadow(
+    color: Colors.grey.withOpacity(0.1),
+    spreadRadius: 1,
+    blurRadius: 4,
+    offset: const Offset(0, 2),
+    ),
+    ],
+    ),
+    child: Card(
+    elevation: 0,
+    color: Colors.transparent,
+    margin: EdgeInsets.zero,
+    child: Padding(
+    padding: const EdgeInsets.all(16.0),
+    child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+    // Wrapping header row in Expanded
+    Row(
+    children: [
+    Container(
+    decoration: BoxDecoration(
+    color: Colors.red.shade100,
+    shape: BoxShape.circle,
+    ),
+    padding: const EdgeInsets.all(8),
+    child: Icon(Icons.warning_amber_rounded,
+    color: Colors.red.shade700,
+    size: 24
+    ),
+    ),
+    const SizedBox(width: 12),
+    Expanded(
+    child: Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+    Flexible(
+    child: Text(
+    'Vehicle Complaints Dashboard',
+    style: TextStyle(
+    fontWeight: FontWeight.bold,
+    fontSize: 16,
+    color: Colors.red.shade900,
+    ),
+    overflow: TextOverflow.ellipsis,
+    ),
+    ),
+    const SizedBox(width: 8),
+    Container(
+    padding: const EdgeInsets.symmetric(
+    horizontal: 8,
+    vertical: 4
+    ),
+    decoration: BoxDecoration(
+    color: Colors.red.shade100,
+    borderRadius: BorderRadius.circular(12),
+    ),
+    child: Text(
+    '${vehicleInfo.complaints.length} Complaints',
+    style: TextStyle(
+    color: Colors.red.shade700,
+    fontWeight: FontWeight.bold,
+    fontSize: 13,
+    ),
+    ),
+    ),
+    ],
+    ),
+    ),
+    ],
+    ),
+    const SizedBox(height: 12),
+    // Feature highlights with Flexible
+    Row(
+    children: [
+    Flexible(
+    child: Row(
+    children: [
+    Icon(Icons.trending_up,
+    size: 16,
+    color: Colors.red.shade600
+    ),
+    const SizedBox(width: 4),
+      Flexible(
+        child: Text(
+          'Trend Analysis',
+          style: TextStyle(
+            fontSize: 13,
+            color: Colors.red.shade800,
+          ),
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+    ],
+    ),
+    ),
+      const SizedBox(width: 16),
+      Flexible(
+        child: Row(
+          children: [
+            Icon(Icons.message_outlined,
+                size: 16,
+                color: Colors.red.shade600
+            ),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                'Detailed Reports',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.red.shade800,
                 ),
+                overflow: TextOverflow.ellipsis,
               ),
+            ),
           ],
         ),
       ),
+    ],
+    ),
+      const SizedBox(height: 12),
+      Text(
+        'Access comprehensive complaint insights, safety analysis, and reported issues to make informed decisions about your vehicle.',
+        style: TextStyle(
+          color: Colors.red.shade700,
+          fontSize: 13,
+        ),
+      ),
+      const SizedBox(height: 8),
+      InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ComplaintsDashboardScreen(
+                make: vehicleInfo.make,
+                model: vehicleInfo.model,
+                year: vehicleInfo.year,
+              ),
+            ),
+          );
+        },
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Text(
+              'View Dashboard',
+              style: TextStyle(
+                color: Colors.red.shade700,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: Colors.red.shade700,
+            ),
+          ],
+        ),
+      ),
+    ],
+    ),
+    ),
+    ),
+    ),
+
+                  if (vehicleInfo.recalls.isNotEmpty)
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade50,
+                        border: Border.all(color: Colors.orange.shade200),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Card(
+                        elevation: 0,
+                        color: Colors.transparent,
+                        margin: EdgeInsets.zero,
+                        child: ListTile(
+                          leading: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.orange.shade100,
+                              shape: BoxShape.circle,
+                            ),
+                            padding: const EdgeInsets.all(8),
+                            child: Icon(Icons.car_crash, color: Colors.orange.shade700, size: 24),
+                          ),
+                          title: Text(
+                            'View Vehicle Recalls (${vehicleInfo.recalls.length})',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.orange.shade900,
+                            ),
+                          ),
+                          subtitle: Text(
+                            'Review safety recalls and campaigns',
+                            style: TextStyle(color: Colors.orange.shade800),
+                          ),
+                          trailing: const Icon(Icons.arrow_forward_ios),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => RecallsDashboardScreen(
+                                  recalls: vehicleInfo.recalls,
+                                  make: vehicleInfo.make,
+                                  model: vehicleInfo.model,
+                                  year: vehicleInfo.year,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                ],
+            ),
+        ),
     );
   }
 
@@ -1181,5 +1094,4 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
       ),
     );
   }
-
 }
