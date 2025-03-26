@@ -51,7 +51,7 @@ class _VinInputScreenState extends State<VinInputScreen> {
               'Feedback',
               style: TextStyle(
                 color: Colors.red,
-                fontSize: 14,
+                fontSize: 15,
                 fontWeight: FontWeight.bold,  // Optional: makes the text bolder
               ),
             ),
